@@ -1,6 +1,8 @@
 'use strict';
 global.__basedir = __dirname;
 
+process.env.UV_THREADPOOL_SIZE = 100;
+
 const requirer = require("extended-requirer");
 const r = new requirer(__dirname, { "currentConfig": "PRO" });
 
