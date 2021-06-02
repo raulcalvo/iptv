@@ -131,34 +131,35 @@ function getBody(encoding) {
 
 function fillChannelsWithUrl(url, initialChannel, interval){
     try {
-        var request = require('sync-request');
+        var request = require('then-request');
         var result = { "buffer": "" };
-        var res = request('GET', url);
-        result.buffer = res.getBody("UTF8");
-        var channelNumber = initialChannel;
-        while (findNextTagValue(result,'href="acestream://')){
-            const url = result.tagValue;
-            if (url=="acestream://")
-                continue;
-            var title = findNextTagValue(result,'alt="') ? result.tagValue : "Channel " + channelNumber;
-            if (title == "")
-                title = "Channel " + channelNumber;
-            const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
 
-            setChannel(channelNumber, title, pictureUrl, url);
-            ++channelNumber;
-        }
-        const channelsUpdated = channelNumber - initialChannel;
-        if (channelsUpdated > 0){
-            lastSyncUrl = url;
-            lastInitialChannel = initialChannel;
-            lastUpdateInterval = interval;
-            clearInterval(updateInterval);
-            if (interval != -1)
-                updateInterval = setInterval(intervalFunction, lastUpdateInterval * 60 * 1000);
-        }
-
-        return channelsUpdated;
+        request('GET', url).done(function (res) {
+            result.buffer = res.getBody("UTF8");
+            var channelNumber = initialChannel;
+            while (findNextTagValue(result,'href="acestream://')){
+                const url = result.tagValue;
+                if (url=="acestream://")
+                    continue;
+                var title = findNextTagValue(result,'alt="') ? result.tagValue : "Channel " + channelNumber;
+                if (title == "")
+                    title = "Channel " + channelNumber;
+                const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
+    
+                setChannel(channelNumber, title, pictureUrl, url);
+                ++channelNumber;
+            }
+            const channelsUpdated = channelNumber - initialChannel;
+            if (channelsUpdated > 0){
+                lastSyncUrl = url;
+                lastInitialChannel = initialChannel;
+                lastUpdateInterval = interval;
+                clearInterval(updateInterval);
+                if (interval != -1)
+                    updateInterval = setInterval(intervalFunction, lastUpdateInterval * 60 * 1000);
+            }
+            });
+        return 0;
     } catch (error) {
         console.error('ERROR:');
         console.error(error);
