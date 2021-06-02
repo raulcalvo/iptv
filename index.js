@@ -85,20 +85,6 @@ function findNextTagValue(param, tag){
     return true;
 }
 
-function downloadPage(url) {
-    const request = require('request');
-    return new Promise((resolve, reject) => {
-        request(url, (error, response, body) => {
-            if (error) reject(error);
-            console.log(JSON.stringify(response));
-            if (response.statusCode != 200) {
-                reject('Invalid status code <' + response.statusCode + '>');
-            }
-            resolve(body);
-        });
-    });
-}
-
 
 function intervalFunction(){
     if (lastInitialChannel == -1)
@@ -127,10 +113,28 @@ var lastInitialChannel = -1;
 var lastUpdateInterval = -1;
 var updateInterval = setInterval(intervalFunction, 5 * 60 * 1000);
 
-async function fillChannelsWithUrl(url, initialChannel, interval){
+function getBody(encoding) {
+    if (this.statusCode >= 300) {
+      var err = new Error(
+        'Server responded with status code ' +
+          this.statusCode +
+          ':\n' +
+          this.body.toString(encoding)
+      );
+      err.statusCode = this.statusCode;
+      err.headers = this.headers;
+      err.body = this.body;
+      throw err;
+    }
+    return encoding ? this.body.toString(encoding) : this.body;
+  }
+
+function fillChannelsWithUrl(url, initialChannel, interval){
     try {
+        var request = require('sync-request');
         var result = { "buffer": "" };
-        result.buffer = await downloadPage(url)
+        var res = request('GET', url);
+        result.buffer = res.getBody("UTF8");
         var channelNumber = initialChannel;
         while (findNextTagValue(result,'href="acestream://')){
             const url = result.tagValue;
@@ -191,9 +195,8 @@ var jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    fillChannelsWithUrl(req.query.url, req.query.initialChannel, req.query.interval).then( numChannels => {
-        res.send("Added " + numChannels + " channels.");
-    });
+    const channelsUpdated = fillChannelsWithUrl(req.query.url, req.query.initialChannel, req.query.interval);
+    res.send("Added " + channelsUpdated + " channels.");
     // res.setHeader('Content-type', "application/json");
     // res.send(JSON.stringify(channels));
 });
