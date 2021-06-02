@@ -1,0 +1,40 @@
+{
+  "name": "iptv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raulcalvo/iptv.git"
+  },
+  "dependencies": {
+    "config-loader-manager": "^1.0.2",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.0",
+    "express-simple-api": "^1.0.1",
+    "extended-requirer": "^1.0.2",
+    "html-creator": "^0.4.3",
+    "http-proxy-middleware": "^1.0.1",
+    "logger-to-memory": "^1.0.1",
+    "merge-json": "0.1.0-b.3",
+    "qrcode": "^1.4.4",
+    "request": "^2.88.2",
+    "serve-index": "^1.9.1",
+    "sync-request": "^6.1.0"
+  },
+  "keywords": [
+    "iptv",
+    "acestream",
+    "m3u8",
+    "hls"
+  ],
+  "author": "Raul Calvo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raulcalvo/iptv/issues"
+  },
+  "homepage": "https://github.com/raulcalvo/iptv#readme"
+}
