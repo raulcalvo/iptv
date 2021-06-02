@@ -11,7 +11,6 @@ const api = r.require("express-simple-api");
 const { exec } = require('child_process');
 var mime = require('mime');
 const path = require('path');
-var QRCode = require('qrcode')
 
 const fs = require('fs');
 
