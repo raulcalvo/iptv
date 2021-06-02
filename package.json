@@ -19,7 +19,7 @@
     "html-creator": "^0.4.3",
     "http-proxy-middleware": "^1.0.1",
     "logger-to-memory": "^1.0.1",
-    "then-request": "^6.0.2"
+    "sync-request": "^6.1.0",
   },
   "keywords": [
     "iptv",
