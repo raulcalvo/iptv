@@ -105,8 +105,8 @@ function intervalFunction(listName){
     if (syncInfo[listName].lastInitialChannel == -1)
         return;
 
-    console.log("Going to update...");
-    fillChannelsWithUrl(syncInfo[listName].lastSyncUrl, syncInfo[listName].lastInitialChannel, syncInfo[listName].lastUpdateInterval);
+    console.log("Going to update list " + listName);
+    fillChannelsWithUrl(listName, syncInfo[listName].lastSyncUrl, syncInfo[listName].lastInitialChannel, syncInfo[listName].lastUpdateInterval);
 }
 
 function getList(listName){
@@ -173,12 +173,17 @@ function fillChannelsWithUrl(listName, url, initialChannel, interval){
         }
         const channelsUpdated = channelNumber - initialChannel;
         if (channelsUpdated > 0){
+            if (!syncInfo.hasOwnProperty(listName))
+                syncInfo[listName] = {};    
             syncInfo[listName].lastSyncUrl = url;
             syncInfo[listName].lastInitialChannel = initialChannel;
             syncInfo[listName].lastUpdateInterval = interval;
-            clearInterval(syncIntervals[listName].updateInterval);
+            if (!syncIntervals.hasOwnProperty(listName))
+                syncIntervals[listName] = {};
+            else
+                clearInterval(syncIntervals[listName].updateInterval);
             if (interval != -1)
-                syncIntervals[listName].updateInterval = setInterval(intervalFunction.bind(listName), syncInfo[listName].lastUpdateInterval * 60 * 1000);
+                syncIntervals[listName].updateInterval = setInterval(intervalFunction, syncInfo[listName].lastUpdateInterval * 60 * 1000, listName);
         }
         return channelsUpdated;
     } catch (error) {
