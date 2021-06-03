@@ -40,17 +40,18 @@ var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : 
 
 // Domain data
 
-var channels = new Array();
-
+var channels = {
+    "default" : new Array()
+};
 
 function isHex(str) {
     var re = /[0-9A-Fa-f]{6}/g;
     if (re.test(str))
       return true;
     return false;
-  }
+}
 
-function setChannel(number, title, pictureUrl, url){
+function getChannelLink(url){
     var link = "";
     if (isHex(url) && (url.length == 40))
         url = "acestream://" + url;
@@ -59,15 +60,28 @@ function setChannel(number, title, pictureUrl, url){
         link = "http://" + acestreamHost + ":" + acestreamPort + "/ace/getstream?id=" + url.substr(12);
     if (url.startsWith("http://") || url.startsWith("https://"))
         link = url;
+    return link;
+}
+
+function setChannel(listName, number, title, pictureUrl, url){
+    const link = getChannelLink(url);
     if (link == "")
         return;
     var channel = {
+        "number" : number,
         "title" : title,
         "originalLink" : url,
         "link" : link,
         "pictureUrl" : pictureUrl
     };
-    channels[number] = channel;
+    
+    if (!channels.hasOwnProperty(listName))
+        channels[listName] = new Array();
+    channels[listName][number] = channel;
+}
+
+function getListNameFromParam(listName){
+    return listName == "undefined" || listName == "" ? "default" : listName;
 }
 
 
@@ -87,32 +101,40 @@ function findNextTagValue(param, tag){
 }
 
 
-function intervalFunction(){
-    if (lastInitialChannel == -1)
+function intervalFunction(listName){
+    if (syncInfo[listName].lastInitialChannel == -1)
         return;
 
     console.log("Going to update...");
-    fillChannelsWithUrl(lastSyncUrl, lastInitialChannel, lastUpdateInterval);
+    fillChannelsWithUrl(syncInfo[listName].lastSyncUrl, syncInfo[listName].lastInitialChannel, syncInfo[listName].lastUpdateInterval);
 }
 
-function getList(){
+function getList(listName){
     var list = "";
-    // "title" : title,
-    // "originalLink" : url,
-    // "link" : link,
-    // "pictureUrl" : pictureUrl
-    channels.forEach(channel => {
+    channels[listName].forEach(channel => {
         list += "#EXTM3U\n";
         list += '#EXTINF:-1 tvg-logo="' + channel.pictureUrl + ' tvg-name="' + channel.title + '",'+ channel.title + '\n';
-        list += channel.link + "\n";
+        list += getChannelLink( channel.originalLink ) + "\n";
     });
     return list;
 }
 
-var lastSyncUrl = "";
-var lastInitialChannel = -1;
-var lastUpdateInterval = -1;
-var updateInterval = setInterval(intervalFunction, 5 * 60 * 1000);
+var syncInfo = {
+    "default" : {
+        "lastSyncUrl": "",
+        "lastInitialChannel": -1,
+        "lastUpdateInterval": -1
+    }
+};
+
+var syncIntervals = {
+    "default" : setInterval(intervalFunction, 5 * 60 * 1000)
+};
+
+// var lastSyncUrl = "";
+// var lastInitialChannel = -1;
+// var lastUpdateInterval = -1;
+// var updateInterval = setInterval(intervalFunction.bind("default"), 5 * 60 * 1000);
 
 function getBody(encoding) {
     if (this.statusCode >= 300) {
@@ -130,7 +152,7 @@ function getBody(encoding) {
     return encoding ? this.body.toString(encoding) : this.body;
   }
 
-function fillChannelsWithUrl(url, initialChannel, interval){
+function fillChannelsWithUrl(listName, url, initialChannel, interval){
     try {
         var request = require('sync-request');
         var result = { "buffer": "" };
@@ -146,17 +168,17 @@ function fillChannelsWithUrl(url, initialChannel, interval){
                 title = "Channel " + channelNumber;
             const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
 
-            setChannel(channelNumber, title, pictureUrl, url);
+            setChannel(listName, channelNumber, title, pictureUrl, url);
             ++channelNumber;
         }
         const channelsUpdated = channelNumber - initialChannel;
         if (channelsUpdated > 0){
-            lastSyncUrl = url;
-            lastInitialChannel = initialChannel;
-            lastUpdateInterval = interval;
-            clearInterval(updateInterval);
+            syncInfo[listName].lastSyncUrl = url;
+            syncInfo[listName].lastInitialChannel = initialChannel;
+            syncInfo[listName].lastUpdateInterval = interval;
+            clearInterval(syncIntervals[listName].updateInterval);
             if (interval != -1)
-                updateInterval = setInterval(intervalFunction, lastUpdateInterval * 60 * 1000);
+                syncIntervals[listName].updateInterval = setInterval(intervalFunction.bind(listName), syncInfo[listName].lastUpdateInterval * 60 * 1000);
         }
         return channelsUpdated;
     } catch (error) {
@@ -174,6 +196,11 @@ var jsonPath = {
     "description": "Parse webside and replace acestream links in order to be able to open them with local acestream",
     "method": "GET",
     "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    },{
         name: "url",
         type: "string",
         maxLength: 300,
@@ -195,10 +222,10 @@ var jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    const channelsUpdated = fillChannelsWithUrl(req.query.url, req.query.initialChannel, req.query.interval);
-    res.send("Added " + channelsUpdated + " channels.");
-    // res.setHeader('Content-type', "application/json");
-    // res.send(JSON.stringify(channels));
+    const listName = getListNameFromParam(req.query.list);
+    const channelsUpdated = fillChannelsWithUrl(listName, req.query.url, req.query.initialChannel, req.query.interval);
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(channels[listName]));
 });
 
 
@@ -219,14 +246,19 @@ jsonPath = {
     "path": "/tv.m3u8",
     "description": "Returns the m3u8 list",
     "method": "GET",
-    "params": [],
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    }],
     "result": {
         "type": "json"
     }
 };
 e.addPath(jsonPath, (req, res) => {
     res.setHeader('Content-type', "application/x-mpegURL");
-    res.send(getList());
+    res.send(getList(getListNameFromParam(req.query.list)));
 });
 
 jsonPath = {
@@ -234,6 +266,11 @@ jsonPath = {
     "description": "Set channel",
     "method": "GET",
     "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    },{
         name: "number",
         type: "string",
         maxLength: 2,
@@ -260,9 +297,10 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    setChannel(req.query.number, req.query.title, req.query.pictureUrl, req.query.url);
+    const listName = getListNameFromParam(req.query.list);
+    setChannel(listName, req.query.number, req.query.title, req.query.pictureUrl, req.query.url);
     res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(channels));
+    res.send(JSON.stringify(channels[listName]));
 });
 
 e.startListening();
