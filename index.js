@@ -34,7 +34,7 @@ var config = {
     }
 };
 
-var acestreamHost = typeof process.env.ACESTREAMHOST === "undefined" ? "192.168.1.22" : process.env.ACESTREAMHOST;
+var acestreamHost = typeof process.env.ACESTREAMHOST === "undefined" ? "127.0.0.1" : process.env.ACESTREAMHOST;
 var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : process.env.ACESTREAMPORT;
 
 const dataFile = "data.json";
@@ -74,6 +74,10 @@ var _d = { "default" : {
         "lastSyncUrl": "",
         "lastInitialChannel": -1,
         "lastUpdateInterval": -1
+    },
+    "setup" : {
+        "acestreamHost" : acestreamHost,
+        "acestreamPort" : acestreamPort
     }
 }
 };
@@ -107,6 +111,10 @@ function ensureListExist(listName){
                 "lastSyncUrl": "",
                 "lastInitialChannel": -1,
                 "lastUpdateInterval": -1
+            },
+            "setup" : {
+                "acestreamHost" : acestreamHost,
+                "acestreamPort" : acestreamPort
             }
         };
 }
@@ -122,20 +130,20 @@ function isHex(str) {
     return false;
 }
 
-function getChannelLink(url){
+function getChannelLink(listName, url){
     var link = "";
     if (isHex(url) && (url.length == 40))
         url = "acestream://" + url;
     if (url.startsWith("acestream://") && (url.length == 52) && isHex(url.substr(12))  )
         // link = "http://" + acestreamHost + ":" + acestreamPort + "/ace/manifest.m3u8?id=" + url.substr(12);
-        link = "http://" + acestreamHost + ":" + acestreamPort + "/ace/getstream?id=" + url.substr(12);
+        link = "http://" + _d[listName].setup.acestreamHost + ":" + _d[listName].setup.acestreamPort + "/ace/getstream?id=" + url.substr(12);
     if (url.startsWith("http://") || url.startsWith("https://"))
         link = url;
     return link;
 }
 
 function setChannel(listName, number, title, pictureUrl, url){
-    const link = getChannelLink(url);
+    const link = getChannelLink(listName, url);
     if (link == "")
         return;
     var channel = {
@@ -216,9 +224,9 @@ function fillChannelsWithUrl(listName, url, initialChannel, interval){
             var title = findNextTagValue(result,'alt="') ? result.tagValue : "Channel " + channelNumber;
             if (title == "")
                 title = "Channel " + channelNumber;
-            const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
+            // const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
 
-            setChannel(listName, channelNumber, title, pictureUrl, url);
+            setChannel(listName, channelNumber, title, "", url);
             ++channelNumber;
         }
         const channelsUpdated = channelNumber - initialChannel;
@@ -271,6 +279,7 @@ var jsonPath = {
 
 e.addPath(jsonPath, (req, res) => {
     const listName = getListNameFromParam(req.query.list);
+    ensureListExist(listName);
     const channelsUpdated = fillChannelsWithUrl(listName, req.query.url, req.query.initialChannel, req.query.interval);
     if (channelsUpdated > 0){
         ensureListExist(listName);
@@ -278,9 +287,10 @@ e.addPath(jsonPath, (req, res) => {
         _d[listName].sync.lastInitialChannel = req.query.initialChannel;
         _d[listName].sync.lastUpdateInterval = req.query.interval;
         launchSync(listName);
-    }
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(_d[listName].c));
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(_d[listName].c));        
+    }else
+        res.send("No channels found.");        
 });
 
 
@@ -358,5 +368,66 @@ e.addPath(jsonPath, (req, res) => {
     res.setHeader('Content-type', "application/json");
     res.send(JSON.stringify(_d[listName].c));
 });
+
+jsonPath = {
+    "path": "/api/setSetup",
+    "description": "Set channel",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    },{
+        name: "acestreamHost",
+        type: "string",
+        maxLength: 200,
+        placeholder: "Acestream host (" + acestreamHost + " by default)"
+    },{
+        name: "acestreamPort",
+        type: "string",
+        maxLength: 5,
+        placeholder: "Acestream port (" + acestreamPort + " by default)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, (req, res) => {
+    const listName = getListNameFromParam(req.query.list);
+    ensureListExist(listName);
+    if (!_d[listName].hasOwnProperty("setup"))
+        _d[listName].setup = {};
+    _d[listName].setup["acestreamHost"] = req.query.acestreamHost;
+    _d[listName].setup["acestreamPort"] = req.query.acestreamPort;
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(_d[listName].setup));
+});
+
+jsonPath = {
+    "path": "/api/getListInfo",
+    "description": "Returns list info",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    const listName = getListNameFromParam(req.query.list);
+    if (_d.hasOwnProperty(listName)){
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(_d[listName]));
+    } else {
+        res.send("List " + listName + "doesn't exist.");
+    }
+});
+
 
 e.startListening();
