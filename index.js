@@ -81,7 +81,7 @@ function setChannel(listName, number, title, pictureUrl, url){
 }
 
 function getListNameFromParam(listName){
-    return listName == "undefined" || listName == "" ? "default" : listName;
+    return typeof listName === "undefined" || listName == "" ? "default" : listName;
 }
 
 
@@ -102,6 +102,13 @@ function findNextTagValue(param, tag){
 
 
 function intervalFunction(listName){
+    console.log("intervalFunction( " + listName + " )");
+    if (typeof listName === 'undefined'){
+        console.log("UNDEFINED PARAM!!!");
+        return;
+    }
+        
+    console.log(JSON.stringify(syncInfo));
     if (syncInfo[listName].lastInitialChannel == -1)
         return;
 
@@ -115,6 +122,7 @@ function getList(listName){
         list += "#EXTM3U\n";
         list += '#EXTINF:-1 tvg-logo="' + channel.pictureUrl + ' tvg-name="' + channel.title + '",'+ channel.title + '\n';
         list += getChannelLink( channel.originalLink ) + "\n";
+        //list += channel.originalLink + "\n";
     });
     return list;
 }
@@ -130,11 +138,6 @@ var syncInfo = {
 var syncIntervals = {
     "default" : setInterval(intervalFunction, 5 * 60 * 1000)
 };
-
-// var lastSyncUrl = "";
-// var lastInitialChannel = -1;
-// var lastUpdateInterval = -1;
-// var updateInterval = setInterval(intervalFunction.bind("default"), 5 * 60 * 1000);
 
 function getBody(encoding) {
     if (this.statusCode >= 300) {
@@ -154,6 +157,7 @@ function getBody(encoding) {
 
 function fillChannelsWithUrl(listName, url, initialChannel, interval){
     try {
+        console.log("fillChannelsWithUrl( " + listName + "," + url + "," + initialChannel + "," + interval + " )");
         var request = require('sync-request');
         var result = { "buffer": "" };
         var res = request('GET', url);
@@ -172,19 +176,7 @@ function fillChannelsWithUrl(listName, url, initialChannel, interval){
             ++channelNumber;
         }
         const channelsUpdated = channelNumber - initialChannel;
-        if (channelsUpdated > 0){
-            if (!syncInfo.hasOwnProperty(listName))
-                syncInfo[listName] = {};    
-            syncInfo[listName].lastSyncUrl = url;
-            syncInfo[listName].lastInitialChannel = initialChannel;
-            syncInfo[listName].lastUpdateInterval = interval;
-            if (!syncIntervals.hasOwnProperty(listName))
-                syncIntervals[listName] = {};
-            else
-                clearInterval(syncIntervals[listName].updateInterval);
-            if (interval != -1)
-                syncIntervals[listName].updateInterval = setInterval(intervalFunction, syncInfo[listName].lastUpdateInterval * 60 * 1000, listName);
-        }
+        console.log("Found " + channelsUpdated + " channels.");
         return channelsUpdated;
     } catch (error) {
         console.error('ERROR:');
@@ -229,6 +221,21 @@ var jsonPath = {
 e.addPath(jsonPath, (req, res) => {
     const listName = getListNameFromParam(req.query.list);
     const channelsUpdated = fillChannelsWithUrl(listName, req.query.url, req.query.initialChannel, req.query.interval);
+    if (channelsUpdated > 0){
+        if (!syncInfo.hasOwnProperty(listName))
+            syncInfo[listName] = {};    
+        syncInfo[listName].lastSyncUrl = req.query.url;
+        syncInfo[listName].lastInitialChannel = req.query.initialChannel;
+        syncInfo[listName].lastUpdateInterval = req.query.interval;
+        if (!syncIntervals.hasOwnProperty(listName))
+            syncIntervals[listName] = {};
+        else
+            clearInterval(syncIntervals[listName].updateInterval);
+        if (req.query.interval != -1){
+            console.log("intervalFunction will be executed with param " + listName + " in " + syncInfo[listName].lastUpdateInterval + " minute/s");
+            syncIntervals[listName].updateInterval = setInterval(intervalFunction, syncInfo[listName].lastUpdateInterval * 60 * 1000, listName);
+        }
+    }
     res.setHeader('Content-type', "application/json");
     res.send(JSON.stringify(channels[listName]));
 });
