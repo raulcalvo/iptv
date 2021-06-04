@@ -186,7 +186,7 @@ function getList(listName){
     _d[listName].c.forEach(channel => {
         list += "#EXTM3U\n";
         list += '#EXTINF:-1 tvg-logo="' + channel.pictureUrl + ' tvg-name="' + channel.title + '",'+ channel.title + '\n';
-        list += getChannelLink( channel.originalLink ) + "\n";
+        list += getChannelLink( listName, channel.originalLink ) + "\n";
         //list += channel.originalLink + "\n";
     });
     return list;
