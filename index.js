@@ -238,7 +238,7 @@ var e = new api(config);
 e.setLogger(log);
 
 var jsonPath = {
-    "path": "/fillChannelsWithUrl",
+    "path": "/api/fillChannelsWithUrl",
     "description": "Parse webside and replace acestream links in order to be able to open them with local acestream",
     "method": "GET",
     "params": [{
@@ -317,7 +317,7 @@ e.addPath(jsonPath, (req, res) => {
 });
 
 jsonPath = {
-    "path": "/setChannel",
+    "path": "/api/setChannel",
     "description": "Set channel",
     "method": "GET",
     "params": [{
