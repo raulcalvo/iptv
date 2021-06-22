@@ -3,18 +3,12 @@ global.__basedir = __dirname;
 
 process.env.UV_THREADPOOL_SIZE = 100;
 
-const requirer = require("extended-requirer");
-const r = new requirer(__dirname, { "currentConfig": "PRO" });
-
-const logger = r.require("logger-to-memory");
-
-const api = r.require("express-simple-api");
-
-const { exec } = require('child_process');
-var mime = require('mime');
-const path = require('path');
-
+const logger = require("logger-to-memory");
+const api = require("express-simple-api");
 const fs = require('fs');
+
+var acestreamHost = typeof process.env.ACESTREAMHOST === "undefined" ? "127.0.0.1" : process.env.ACESTREAMHOST;
+var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : process.env.ACESTREAMPORT;
 
 var loggerConfig = {
     "logger-to-memory": {
@@ -34,10 +28,11 @@ var config = {
     }
 };
 
-var acestreamHost = typeof process.env.ACESTREAMHOST === "undefined" ? "127.0.0.1" : process.env.ACESTREAMHOST;
-var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : process.env.ACESTREAMPORT;
-
 const dataFile = "data.json";
+
+var channels = {
+    "default" : new Array()
+};
 
 
 function intervalFunction(listName){
@@ -67,20 +62,22 @@ function launchSync(listName){
 }
 
 // Domain data
-
-var _d = { "default" : {
-    "c" : new Array(),
-    "sync" : {
-        "lastSyncUrl": "",
-        "lastInitialChannel": -1,
-        "lastUpdateInterval": -1
-    },
-    "setup" : {
-        "acestreamHost" : acestreamHost,
-        "acestreamPort" : acestreamPort
-    }
+function emptyList(){
+    return {
+        "c" : new Array(),
+        "sync" : {
+            "lastSyncUrl": "",
+            "lastInitialChannel": -1,
+            "lastUpdateInterval": -1
+        },
+        "setup" : {
+            "acestreamHost" : acestreamHost,
+            "acestreamPort" : acestreamPort
+        }
+    };
 }
-};
+
+var _d = { "default" : emptyList() };
 
 var syncIntervals = {
     "default" : setInterval(intervalFunction, 5 * 60 * 1000)
@@ -103,25 +100,14 @@ if (fs.existsSync(dataFile)){
     }
 }
 
+
+
+
 function ensureListExist(listName){
     if (!_d.hasOwnProperty(listName))
-        _d[listName] = {
-            "c" : new Array(),
-            "sync" : {
-                "lastSyncUrl": "",
-                "lastInitialChannel": -1,
-                "lastUpdateInterval": -1
-            },
-            "setup" : {
-                "acestreamHost" : acestreamHost,
-                "acestreamPort" : acestreamPort
-            }
-        };
+        _d[listName] = emptyList();
 }
 
-var channels = {
-    "default" : new Array()
-};
 
 function isHex(str) {
     var re = /[0-9A-Fa-f]{6}/g;
@@ -178,16 +164,12 @@ function findNextTagValue(param, tag){
     return true;
 }
 
-
-
-
 function getList(listName){
     var list = "";
     _d[listName].c.forEach(channel => {
         list += "#EXTM3U\n";
         list += '#EXTINF:-1 tvg-logo="' + channel.pictureUrl + ' tvg-name="' + channel.title + '",'+ channel.title + '\n';
         list += getChannelLink( listName, channel.originalLink ) + "\n";
-        //list += channel.originalLink + "\n";
     });
     return list;
 }
@@ -429,5 +411,42 @@ e.addPath(jsonPath, (req, res) => {
     }
 });
 
+
+e.addPath(jsonPath, (req, res) => {
+    const listName = getListNameFromParam(req.query.list);
+    ensureListExist(listName);
+    if (!_d[listName].hasOwnProperty("setup"))
+        _d[listName].setup = {};
+    _d[listName].setup["acestreamHost"] = req.query.acestreamHost;
+    _d[listName].setup["acestreamPort"] = req.query.acestreamPort;
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(_d[listName].setup));
+});
+
+jsonPath = {
+    "path": "/api/resetList",
+    "description": "Reset list removing all its channels",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    const listName = getListNameFromParam(req.query.list);
+    if (_d.hasOwnProperty(listName)){
+        _d[listName] = emptyList();
+        fs.writeFileSync(dataFile, JSON.stringify(_d));
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(_d[listName]));
+    } else {
+        res.send("List " + listName + "doesn't exist.");
+    }
+});
 
 e.startListening();
