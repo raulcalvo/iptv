@@ -104,6 +104,30 @@ module.exports = class domain {
         return false;
     }
 
+    addSourceToAllLists(url, updateTime){
+        Object.keys(this._d.lists).forEach( listName => {
+            this.addSourceUrl( listName, url, updateTime );
+        });
+    }
+
+    getListNamesOnArray(){
+        return Object.keys(this._d.lists);
+    }
+
+    getListInfo(listName){
+        var result = {
+            "name" : listName,
+            "channelsCount" : this._d.lists[listName].channels.length,
+            "sources" : new Array(),
+            "channels" : this._d.lists[listName].channels
+        };
+        Object.keys(this._d.lists[listName].sources).forEach( url => {
+            result.sources.push(this._d.lists[listName].sources[url]);
+        });
+        return result;
+    }
+    
+    
     getSources(list){
         if (this.listExists(list)){
             return this._d.lists[list].sources;
@@ -126,10 +150,21 @@ module.exports = class domain {
         return {};
     }
 
-    removeSource(list,url){
+    removeSourceFromList(list,url){
         if (this.getSource(list,url).hasOwnProperty("url")){
             delete this._d.lists[list].sources[url];
+            return true;
         }
+        return false;
+    }
+
+    removeSource(url){
+        var removed = false;
+        Object.keys(this._d.lists).forEach( listName => {
+            this.removeSourceFromList( listName, url);
+            removed = true;
+        });
+        return removed;
     }
 
     readListFromDisk(list){

@@ -22,6 +22,8 @@ module.exports = class synchronizer {
                 channels.forEach( channel => {
                     sync._domain.addChannel(listName, channel.name, channel.url, source.url);
                 });
+                source["numChannels"] = channels.length;
+                source["lastUpdate"] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
             }
         }
         sync._domain.writeToDisk(listName);
@@ -51,7 +53,7 @@ module.exports = class synchronizer {
         });
     }
 
-    clearIntervals(list){
+    clearIntervalsFromList(list){
         if (this._intervals.hasOwnProperty(list)){
             Object.keys(this._intervals[list]).forEach( url => {
                 clearInterval(this._intervals[list][url]);
@@ -59,9 +61,16 @@ module.exports = class synchronizer {
         }
     }
 
+    clearIntervalForSource(url){
+        Object.keys(this._intervals).forEach( listName => {
+            clearInterval(this._intervals[listName][url]);
+            this._domain.writeToDisk(listName);
+        });
+    }
+
     clearIntervals(){
         Object.keys(this._intervals).forEach( listName => {
-            this.clearIntervals(listName);
+            this.clearIntervalsFromList(listName);
         });
     }
 

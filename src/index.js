@@ -65,7 +65,22 @@ var e = new api(config);
 e.setLogger(log);
 
 var jsonPath = {
-    "path": "/api/fillChannelsWithUrl",
+    "path": "/",
+    "description": "Main endpoint",
+    "method": "GET",
+    "params": [],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    res.send("<html><body><div align='center'>IPTV (c)<br><a href='www.raulcalvo.com'>raulcalvo</a><br>;-)</div>");
+});
+
+
+
+jsonPath = {
+    "path": "/api/addSourceToList",
     "description": "Parse webside and replace acestream links in order to be able to open them with local acestream",
     "method": "GET",
     "params": [{
@@ -106,24 +121,41 @@ e.addPath(jsonPath, (req, res) => {
 
 });
 
-
 jsonPath = {
-    "path": "/",
-    "description": "Main endpoint",
+    "path": "/api/addSource",
+    "description": "Parse webside and replace acestream links in order to be able to open them with local acestream",
     "method": "GET",
-    "params": [],
+    "params": [{
+        name: "url",
+        type: "string",
+        maxLength: 300,
+        placeholder: "url to parse"
+    }, {
+        name: "interval",
+        type: "string",
+        maxLength: 3,
+        placeholder: "Automatic update time in seconds (-1 no automatic update)"
+    }],
     "result": {
         "type": "json"
     }
 };
+
 e.addPath(jsonPath, (req, res) => {
-    res.send("<html><body><div align='center'>IPTV (c)<br><a href='www.raulcalvo.com'>raulcalvo</a><br>;-)</div>");
+    domain.addSourceToAllLists(req.query.url, req.query.interval);
+    domain.getListNamesOnArray().forEach( listName => {
+        sync.updateChannels(listName, req.query.url, sync);
+        sync.launchSourceSync(listName, req.query.url);
+    });
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(domain._d));
 });
 
 
 
+
 jsonPath = {
-    "path": "/api/setChannel",
+    "path": "/api/addChanelSourceToList",
     "description": "Set channel",
     "method": "GET",
     "params": [{
@@ -286,7 +318,7 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    res.send(JSON.stringify(domain.getList(listName)));
+    res.send(JSON.stringify(domain.getListInfo(listName)));
 });
 
 
@@ -316,5 +348,74 @@ e.addPath(jsonPath, (req, res) => {
         res.send("List " + listName + " doesn't exist.")
     }
 });
+
+jsonPath = {
+    "path": "/api/removeSourceFromList",
+    "description": "Remove list",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    },{
+        name: "url",
+        type: "string",
+        maxLength: 512,
+        placeholder: "Url (source) to remove"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    const listName = getListNameFromParam(req.query.list);
+    if (!domain.listExists(listName)){
+        res.send("Error: list " + listName + " doesn't exist.");
+        return;
+    }
+    if (domain.removeSourceFromList(listName, req.query.url)){
+        res.send("Source removed from list " + listName);
+    } else {
+        res.send("Can't remove source.");
+    }
+});
+
+jsonPath = {
+    "path": "/api/removeSourceFromAllList",
+    "description": "Remove list",
+    "method": "GET",
+    "params": [{
+        name: "url",
+        type: "string",
+        maxLength: 512,
+        placeholder: "Url (source) to remove"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    if (domain.removeSource(req.query.url)){
+        sync.clearIntervalForSource(req.query.url);
+        res.send("Removed");
+    } else
+        res.send("Problem removing source");
+});
+
+jsonPath = {
+    "path": "/api/getData",
+    "description": "Obtain all running data",
+    "method": "GET",
+    "params": [],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(domain._d));
+});
+
 
 e.startListening();
