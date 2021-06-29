@@ -98,6 +98,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in seconds (-1 no automatic update)"
+    },{
+        name: "includeM3u8",
+        type: "string",
+        maxLength: 3,
+        placeholder: "If true, parser will include .m3u8 links"
     }],
     "result": {
         "type": "json"
@@ -110,9 +115,9 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval)){
+    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false)){
         domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval);
+        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false);
     }
     sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
@@ -135,6 +140,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in seconds (-1 no automatic update)"
+    },{
+        name: "includeM3u8",
+        type: "string",
+        maxLength: 3,
+        placeholder: "If true, parser will include .m3u8 links"
     }],
     "result": {
         "type": "json"
@@ -142,7 +152,7 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval);
+    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false);
     domain.getListNamesOnArray().forEach( listName => {
         sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);
@@ -343,6 +353,7 @@ e.addPath(jsonPath, (req, res) => {
         return;
     }
     if (domain.removeList(listName)){
+        domain.writeToDisk(listName);
         res.send("List " + listName + " removed.")
     } else {
         res.send("List " + listName + " doesn't exist.")
@@ -375,6 +386,8 @@ e.addPath(jsonPath, (req, res) => {
         return;
     }
     if (domain.removeSourceFromList(listName, req.query.url)){
+        sync.clearIntervalForListAndSource(listName, req.query.url)
+        domain.writeToDisk(listName);
         res.send("Source removed from list " + listName);
     } else {
         res.send("Can't remove source.");

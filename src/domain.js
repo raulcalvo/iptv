@@ -40,7 +40,7 @@ module.exports = class domain {
     }
 
     removeList(name){
-        if (this.listExists(name)){
+        if (!this.listExists(name)){
             return false;
         } else {
             delete this._d.lists[name];
@@ -72,11 +72,12 @@ module.exports = class domain {
         }
     }
         
-    newSourceUrl(url, updateTime) {
+    newSourceUrl(url, updateTime, includeM3u8) {
         return {
             "url": url,
             "isSingleChannel" : false,
-            "updateTime" : updateTime
+            "updateTime" : updateTime,
+            "includeM3u8" : includeM3u8
         };
     }
     
@@ -96,17 +97,17 @@ module.exports = class domain {
         return false;
     }
 
-    addSourceUrl(list, url, updateTime){
+    addSourceUrl(list, url, updateTime, includeM3u8){
         if (this.listExists(list) && !this.sourceExists(list, url)){
-            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime);
+            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime, includeM3u8);
             return true;
         }
         return false;
     }
 
-    addSourceToAllLists(url, updateTime){
+    addSourceToAllLists(url, updateTime, includeM3u8){
         Object.keys(this._d.lists).forEach( listName => {
-            this.addSourceUrl( listName, url, updateTime );
+            this.addSourceUrl( listName, url, updateTime, includeM3u8 );
         });
     }
 
@@ -153,6 +154,7 @@ module.exports = class domain {
     removeSourceFromList(list,url){
         if (this.getSource(list,url).hasOwnProperty("url")){
             delete this._d.lists[list].sources[url];
+            this._d.lists[list].channels = this._d.lists[list].channels.filter(item => item.source != url);
             return true;
         }
         return false;
@@ -218,6 +220,8 @@ module.exports = class domain {
     }
 
     clearChannels(list, url){
+        if (!this._d.lists[list].hasOwnProperty("channels"))
+            return;
         if (this.listExists(list)){
             this._d.lists[list].channels = this._d.lists[list].channels.filter(item => item.source != url);
         }
@@ -225,6 +229,8 @@ module.exports = class domain {
 
     addChannel(list,name,url, source){
         if (this.listExists(list)){
+            if (!this._d.lists[list].hasOwnProperty("channels"))
+                this._d.lists[list].channels = new Array();
             this._d.lists[list].channels.push({
                 "name" : name,
                 "url" : url,

@@ -17,7 +17,7 @@ module.exports = class synchronizer {
         if (source.isSingleChannel){
             sync._domain.addChannel(listName, source.name, source.url );
         } else {
-            var channels = parser(source.url);
+            var channels = parser(source.url, source.includeM3u8);
             if (channels.length > 0){
                 channels.forEach( channel => {
                     sync._domain.addChannel(listName, channel.name, channel.url, source.url);
@@ -67,6 +67,12 @@ module.exports = class synchronizer {
             this._domain.writeToDisk(listName);
         });
     }
+
+    clearIntervalForListAndSource(listName, url){
+        clearInterval(this._intervals[listName][url]);
+        this._domain.writeToDisk(listName);
+    }
+
 
     clearIntervals(){
         Object.keys(this._intervals).forEach( listName => {

@@ -16,16 +16,32 @@ function findNextTagValue(param, tag) {
     return true;
 }
 
-module.exports = function parse(url) {
+function isM3u8(href){
+    return href.indexOf("http") == 0 && href.indexOf(".m3u8") != -1;
+}
+
+function isAcestream(href){
+    return href.indexOf("acestream://") == 0 && href != "acestream://";
+}
+
+
+module.exports = function parse(url, includeM3u8) {
     var output = new Array();
     try {
         var result = { "buffer": "" };
         var res = request('GET', url);
         result.buffer = res.getBody("UTF8");
-        while (findNextTagValue(result, 'href="acestream://')) {
+        while (findNextTagValue(result, 'href="')) {
             const url = result.tagValue;
-            if (url == "acestream://")
-                continue;
+            var ok = false;
+            if (isAcestream(url))
+                ok = true;
+            else if (isM3u8(url) && includeM3u8)
+                ok = true;
+
+            if (!ok)
+                continue
+
             var name = findNextTagValue(result, 'alt="') ? result.tagValue : "NO-NAME";
             if (name == "")
             name ="NO-NAME";
