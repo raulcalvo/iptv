@@ -208,7 +208,7 @@ module.exports = class domain {
     writeToDisk( list ) {
         if ( typeof list === "undefined"){  // read all lists
             Object.keys(this._d.lists).forEach( (listName) => {
-                if (listExists(listName)){
+                if (this.listExists(listName)){
                     fs.writeFileSync(listName + this.listSufix, JSON.stringify(this._d.lists[listName]));
                 }
             })
@@ -217,6 +217,24 @@ module.exports = class domain {
                 fs.writeFileSync(list + this.listSufix, JSON.stringify(this._d.lists[list]));
             }
         }
+    }
+
+    getBackup(){
+        var result = {};
+        Object.keys(this._d.lists).forEach( (listName) => {
+            if (this.listExists(listName)){
+                var list = {};
+                Object.assign(list, this._d.lists[listName]);
+                delete list.channels;
+                result[listName] = list;
+            }
+        })
+        return result;
+    }
+
+    setBackup(backup){
+        this._d.lists = {};
+        Object.assign(this._d.lists, backup);
     }
 
     clearChannels(list, url){

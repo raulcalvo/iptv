@@ -2,16 +2,19 @@
 var request = require('sync-request');
 
 function findNextTagValue(param, tag) {
-    param.currentPos = param.buffer.indexOf(tag, ++param.currentPos);
-    if (param.currentPos == -1)
+    var foundPos = param.buffer.indexOf(tag, ++param.currentPos);
+    if (foundPos == -1)
         return false;
-    param.currentPos = param.buffer.indexOf('"', ++param.currentPos);
-    if (param.currentPos == -1)
+    param.currentPos = foundPos;
+    foundPos = param.buffer.indexOf('"', ++param.currentPos);
+    if (foundPos == -1)
         return false;
+    param.currentPos = foundPos;
     var beginPos = param.currentPos + 1;
-    param.currentPos = param.buffer.indexOf('"', ++param.currentPos);
-    if (param.currentPos == -1)
+    foundPos = param.buffer.indexOf('"', ++param.currentPos);
+    if (foundPos == -1)
         return false;
+    param.currentPos = foundPos;
     param.tagValue = param.buffer.substr(beginPos, param.currentPos - beginPos);
     return true;
 }
