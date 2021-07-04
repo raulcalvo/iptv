@@ -97,7 +97,7 @@ jsonPath = {
         name: "interval",
         type: "string",
         maxLength: 3,
-        placeholder: "Automatic update time in seconds (-1 no automatic update)"
+        placeholder: "Automatic update time in minutes (-1 no automatic update)"
     },{
         name: "includeM3u8",
         type: "string",
@@ -139,7 +139,7 @@ jsonPath = {
         name: "interval",
         type: "string",
         maxLength: 3,
-        placeholder: "Automatic update time in seconds (-1 no automatic update)"
+        placeholder: "Automatic update time in minutes (-1 no automatic update)"
     },{
         name: "includeM3u8",
         type: "string",
