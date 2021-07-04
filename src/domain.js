@@ -19,6 +19,7 @@ module.exports = class domain {
             "lists" : {}
              };
         this.listSufix = '.list.json';
+        this.dataFolder = './data';
     }
 
     createList(name, setup){
@@ -170,7 +171,7 @@ module.exports = class domain {
     }
 
     readListFromDisk(list){
-        const filename = list + ".list.json";
+        const filename = this.dataFolder + "/" + list + ".list.json";
         if (fs.existsSync(filename)) {
             const data = fs.readFileSync(filename, "utf8");
             if (data.length != 0) {
@@ -195,7 +196,10 @@ module.exports = class domain {
 
     readFromDisk( list ) {
         if ( typeof list === "undefined"){  // read all lists
-            var files = fs.readdirSync('.').filter(fn => fn.endsWith(this.listSufix));
+            if (!fs.existsSync(this.dataFolder)){
+                fs.mkdirSync(this.dataFolder);
+            }            
+            var files = fs.readdirSync(this.dataFolder).filter(fn => fn.endsWith(this.listSufix));
             files.forEach(listFile => {
                 const listName = listFile.slice(0,- this.listSufix.length);
                 this.insertOfUpdateList(listName, this.readListFromDisk(listName));
@@ -209,12 +213,12 @@ module.exports = class domain {
         if ( typeof list === "undefined"){  // read all lists
             Object.keys(this._d.lists).forEach( (listName) => {
                 if (this.listExists(listName)){
-                    fs.writeFileSync(listName + this.listSufix, JSON.stringify(this._d.lists[listName]));
+                    fs.writeFileSync(this.dataFolder + "/" + listName + this.listSufix, JSON.stringify(this._d.lists[listName]));
                 }
             })
         } else {
             if (this.listExists(list)){
-                fs.writeFileSync(list + this.listSufix, JSON.stringify(this._d.lists[list]));
+                fs.writeFileSync(this.dataFolder + "/" + list + this.listSufix, JSON.stringify(this._d.lists[list]));
             }
         }
     }
