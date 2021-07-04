@@ -431,4 +431,48 @@ e.addPath(jsonPath, (req, res) => {
 });
 
 
+jsonPath = {
+    "path": "/api/getBackup",
+    "description": "Obtain data backup",
+    "method": "GET",
+    "params": [],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(domain.getBackup()));
+});
+
+
+jsonPath = {
+    "path": "/api/restoreBackup",
+    "description": "Restore saved backup",
+    "method": "GET",
+    "params": [{
+        name: "backupData",
+        type: "string",
+        maxLength: 8000,
+        placeholder: "Json saved with getBackup method"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, (req, res) => {
+    var backup = JSON.parse(req.query.backupData);
+    if (Object.keys(backup).length == 0){
+        res.send("Error, not valid backup.");
+    }
+
+    sync.clearIntervals();
+    domain.setBackup(backup);
+    sync.launchSync();
+    res.send("Backup restored");
+});
+
+
+
 e.startListening();

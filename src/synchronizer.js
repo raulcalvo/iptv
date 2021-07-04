@@ -4,7 +4,7 @@ const parser = require("./acestream-url-parser.js");
 
 module.exports = class synchronizer {
     updateChannels(listName, url, sync) {
-        console.log("updateChannels( " + listName + " )");
+        console.log("Updating channels from list " + listName + " and source " + url + ")");
         if (typeof listName === 'undefined') {
             console.log("UNDEFINED PARAM!!!");
             return;
@@ -36,6 +36,7 @@ module.exports = class synchronizer {
         var source = this._domain.getSource(list, url);
         if (source.hasOwnProperty("updateTime")){
             this._intervals[list][url] = setInterval( this.updateChannels, this._domain.getSource(list, url).updateTime * 60 * 1000, list, url, this);
+            this.updateChannels(list, url, this);
         }
     }
 
