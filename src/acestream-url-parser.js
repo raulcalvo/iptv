@@ -1,58 +1,35 @@
 'use strict';
 var request = require('sync-request');
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
-function findNextTagValue(param, tag) {
-    var foundPos = param.buffer.indexOf(tag, ++param.currentPos);
-    if (foundPos == -1)
-        return false;
-    param.currentPos = foundPos;
-    foundPos = param.buffer.indexOf('"', ++param.currentPos);
-    if (foundPos == -1)
-        return false;
-    param.currentPos = foundPos;
-    var beginPos = param.currentPos + 1;
-    foundPos = param.buffer.indexOf('"', ++param.currentPos);
-    if (foundPos == -1)
-        return false;
-    param.currentPos = foundPos;
-    param.tagValue = param.buffer.substr(beginPos, param.currentPos - beginPos);
-    return true;
+function getChannelName(aNode){
+    var name = "NO-NAME";
+    if (aNode.childNodes.length == 1){
+        name = aNode.childNodes[0].alt;
+    }
+    return name;
 }
-
-function isM3u8(href){
-    return href.indexOf("http") == 0 && href.indexOf(".m3u8") != -1;
-}
-
-function isAcestream(href){
-    return href.indexOf("acestream://") == 0 && href != "acestream://";
-}
-
 
 module.exports = function parse(url, includeM3u8) {
     var output = new Array();
     try {
         var result = { "buffer": "" };
         var res = request('GET', url);
-        result.buffer = res.getBody("UTF8");
-        while (findNextTagValue(result, 'href="')) {
-            const url = result.tagValue;
-            var ok = false;
-            if (isAcestream(url))
-                ok = true;
-            else if (isM3u8(url) && includeM3u8)
-                ok = true;
-
-            if (!ok)
-                continue
-
-            var name = findNextTagValue(result, 'alt="') ? result.tagValue : "NO-NAME";
-            if (name == "")
-            name ="NO-NAME";
-            // const pictureUrl = findNextTagValue(result,'src="') ? result.tagValue : "";
+        const dom = new JSDOM(res.getBody("UTF8"));
+        dom.window.document.querySelectorAll("a[href^=acestream]").forEach( aNode => {
             output.push({ 
-                "name" : name,
-                "url" : url
+                "name" : getChannelName(aNode),
+                "url" : aNode.href
             });
+        });
+        if (includeM3u8){
+            dom.window.document.querySelectorAll('a[href*=".m3u8"]').forEach( aNode => {
+                output.push({ 
+                    "name" : getChannelName(aNode),
+                    "url" : aNode.href
+                });
+            });            
         }
     } catch (error) {
         console.error('ERROR:');
