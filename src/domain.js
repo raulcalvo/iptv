@@ -90,7 +90,7 @@ module.exports = class domain {
     }
 
     addSourceChannel(list, name, url){
-        if (this.listExists() && !this.sourceExists(list, url)){
+        if (this.listExists(list) && !this.sourceExists(list, url)){
             this._d.lists[list].sources[url] = this.newSourceChannel(name, url);
             return true;
         }
