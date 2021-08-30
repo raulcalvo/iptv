@@ -59,7 +59,7 @@ module.exports = function parse(url, includeM3u8) {
                             var channelName = "";
                             var channelUrl = "";
                             trNode.children[2].querySelectorAll("a").forEach(channelNode => {
-                                channelName = textNodesUnder(channelNode);
+                                channelName = textNodesUnder(channelNode).split("&nbsp;").join("");
                                 channelUrl = channelNode.href;
                             });
         
