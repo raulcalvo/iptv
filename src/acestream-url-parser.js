@@ -31,6 +31,20 @@ function getImageUrl(url, imageURL){
     return baseURL + imageURL;
 }
 
+function getQualityFromImage(imageURL){
+    if (imageURL.indexOf("1080") != -1){
+        return "1080";
+    }
+    if (imageURL.indexOf("720") != -1){
+        return "720";
+    }
+    if (imageURL.indexOf("480") != -1){
+        return "480";
+    }
+    return "";
+
+}
+
 module.exports = function parse(url, includeM3u8) {
     var output = new Array();
     try {
@@ -53,9 +67,17 @@ module.exports = function parse(url, includeM3u8) {
 
                             var quality = "";
                             trNode.children[1].querySelectorAll("img").forEach(qualityImageNode => {
-                                quality = "[" + qualityImageNode.alt + "]";
+                                if (qualityImageNode.alt != ""){
+                                    quality = "[" + qualityImageNode.alt + "]";
+                                } else {
+                                    var q = getQualityFromImage(qualityImageNode.src);
+                                    if (q != ""){
+                                        quality = "[" + q + "]";
+                                    }
+                                }                            
                             });
-        
+
+
                             var channelName = "";
                             var channelUrl = "";
                             trNode.children[2].querySelectorAll("a").forEach(channelNode => {
