@@ -222,6 +222,25 @@ e.addPath(jsonPath, (req, res) => {
     res.send(domain.getM3U8List(getListNameFromParam(req.query.list)));
 });
 
+jsonPath = {
+    "path": "/tv.html",
+    "description": "Returns the m3u8 list",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    res.setHeader('Content-type', "text/html");
+    res.send(domain.getHTMLList(getListNameFromParam(req.query.list)));
+});
+
 
 
 jsonPath = {

@@ -289,6 +289,16 @@ module.exports = class domain {
             output += this.getChannelLink(listName, channel.url) + "\n";
         });
         return output;
-    }    
+    } 
+    
+    getHTMLList(listName) {
+        var output = "";
+        output += "<html><head></head><body>";
+        this.getChannels(listName).forEach( channel =>{
+            output += "<a target='_blank' href='vlc://" + this.getChannelLink(listName, channel.url) + "'>"+ channel.name +"</a><br>";
+        });
+        output += "</body></html>"
+        return output;
+    }
 
 }
