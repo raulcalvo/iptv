@@ -4,6 +4,7 @@
 global.__basedir = __dirname;
 
 process.env.UV_THREADPOOL_SIZE = 100;
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const logger = require("logger-to-memory");
 const api = require("express-simple-api");

@@ -249,14 +249,15 @@ module.exports = class domain {
         }
     }
 
-    addChannel(list,name,url, source){
+    addChannel(list,name,url, source, logo){
         if (this.listExists(list)){
             if (!this._d.lists[list].hasOwnProperty("channels"))
                 this._d.lists[list].channels = new Array();
             this._d.lists[list].channels.push({
                 "name" : name,
                 "url" : url,
-                "source" : source
+                "source" : source,
+                "logo" : logo
             });
         }
     }
@@ -279,11 +280,12 @@ module.exports = class domain {
         return link;
     }
     
+    
     getM3U8List(listName) {
         var output = "";
         this.getChannels(listName).forEach( channel =>{
             output += "#EXTM3U\n";
-            output += '#EXTINF:-1 tvg-name="' + channel.name + '",' + channel.name + '\n';
+            output += '#EXTINF:-1 tvg-logo= "' + channel.logo + '" tvg-name="' + channel.name + '",' + channel.name + '\n';
             output += this.getChannelLink(listName, channel.url) + "\n";
         });
         return output;

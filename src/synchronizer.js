@@ -20,7 +20,7 @@ module.exports = class synchronizer {
             var channels = parser(source.url, source.includeM3u8);
             if (channels.length > 0){
                 channels.forEach( channel => {
-                    sync._domain.addChannel(listName, channel.name, channel.url, source.url);
+                    sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
                 });
                 source["numChannels"] = channels.length;
                 source["lastUpdate"] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
