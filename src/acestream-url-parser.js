@@ -68,7 +68,7 @@ module.exports = function parse(url, includeM3u8) {
                                 channelLang = "[" + getFlagLang(flagNode.src) + "]";
                             });
                             if (channelLang == ""){
-                                channelLang = textNodesUnder(trNode.children[3]);
+                                channelLang = "[" + textNodesUnder(trNode.children[3]) + "]";
                             }
         
                             if ((channelLogo != "") && (quality != "") && (channelName != "") && (channelUrl != "")){
