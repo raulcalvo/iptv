@@ -285,7 +285,7 @@ module.exports = class domain {
         var output = "";
         this.getChannels(listName).forEach( channel =>{
             output += "#EXTM3U\n";
-            output += '#EXTINF:-1 tvg-id="" tvg-name="' + channel.name + ' tvg-logo="' + channel.logo + '" tvg-url="",' + channel.name + '\n';
+            output += '#EXTINF:-1 tvg-id="" tvg-name="' + channel.name + '" tvg-logo="' + channel.logo + '" tvg-url="",' + channel.name + '\n';
             output += this.getChannelLink(listName, channel.url) + "\n";
         });
         return output;
