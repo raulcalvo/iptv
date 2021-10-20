@@ -36,6 +36,6 @@ The sources of these m3u8 playlists can be:<br>
 &nbsp;&nbsp;* inludeM3u8 - If true, when parsing url, m3u8 links present in the web page will be included in the playlist as simple channels<br>
 
 <h3>How it works</h3>
-For every URL source, every "interval" time, IPTV will parse the webpage "URL", extract all the acestream links (m3u8 links if includeM3u8 parameter is true) and put them into the source's playlist.<br>
+For every URL source, every "interval" time, IPTV will parse the webpage "URL", extract all the acestream links and put them into the source's playlist.<br>
 
 

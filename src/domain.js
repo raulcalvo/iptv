@@ -73,12 +73,11 @@ module.exports = class domain {
         }
     }
         
-    newSourceUrl(url, updateTime, includeM3u8) {
+    newSourceUrl(url, updateTime) {
         return {
             "url": url,
             "isSingleChannel" : false,
-            "updateTime" : updateTime,
-            "includeM3u8" : includeM3u8
+            "updateTime" : updateTime
         };
     }
     
@@ -98,17 +97,17 @@ module.exports = class domain {
         return false;
     }
 
-    addSourceUrl(list, url, updateTime, includeM3u8){
+    addSourceUrl(list, url, updateTime){
         if (this.listExists(list) && !this.sourceExists(list, url)){
-            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime, includeM3u8);
+            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime);
             return true;
         }
         return false;
     }
 
-    addSourceToAllLists(url, updateTime, includeM3u8){
+    addSourceToAllLists(url, updateTime){
         Object.keys(this._d.lists).forEach( listName => {
-            this.addSourceUrl( listName, url, updateTime, includeM3u8 );
+            this.addSourceUrl( listName, url, updateTime);
         });
     }
 

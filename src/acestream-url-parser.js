@@ -23,14 +23,6 @@ function getFlagLang(flagURL){
     return flagURL.substring(flagURL.length - 6, flagURL.length-4).toUpperCase();
 }
 
-function getImageUrl(url, imageURL){
-    if (imageURL.startsWith("http")){
-        return imageURL;
-    }
-    var baseURL = url.substring( 0, url.lastIndexOf("/"));
-    return baseURL + imageURL;
-}
-
 function getQualityFromImage(imageURL){
     if (imageURL.indexOf("1080") != -1){
         return "1080";
@@ -45,75 +37,207 @@ function getQualityFromImage(imageURL){
 
 }
 
-module.exports = function parse(url, includeM3u8) {
+function queryAncestor(node, elementType, maxDepth){
+    if (maxDepth == 0)
+        return null;
+    var valid = node.outerHTML.startsWith("<"+elementType);
+    return valid ? node : queryAncestor(node.parentNode, elementType, maxDepth - 1);
+}
+
+function parse3Column(node){
+    // obtain name
+    var name = "";
+    try{
+        var n = queryAncestor(node,"tr", 5);
+        while (n){
+            if (n.childElementCount==1){
+                var imgNode = n.querySelector("img");
+                if ( imgNode ){
+                    name = imgNode.alt;
+                    break;
+                }
+            }
+            n = n.previousElementSibling;
+        }
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var qual = "";
+    try{
+        qual = "["+ getQualityFromImage(node.querySelector("img").src)+"]";
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var lang = "";
+    try{
+        lang = "[" + getFlagLang(queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src)+ "]";
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var logo = "";
+    try{
+        logo = queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src;
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    return {
+        "name": qual + lang + " " + name,
+        "url": node.href,
+        "logo" : logo 
+    }
+    
+}
+
+
+function parse4Column(aNode){
+    // obtain name
+    var name = "";
+    try{
+        // name = textNodesUnder(queryAncestor(aNode,"td",5).previousElementSibling).split("&nbsp;").join("");
+        name = textNodesUnder(queryAncestor(aNode,"td",5)).split("&nbsp;").join("");;
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var qual = "";
+    try{
+        qual = "["+ getQualityFromImage(queryAncestor(aNode,"td",5).previousElementSibling.querySelector("img").src)+"]";
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var lang = "";
+    try{
+        lang = "[" + getFlagLang(queryAncestor(aNode,"td",5).nextElementSibling.querySelector("img").src)+ "]";
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var logo = "";
+    try{
+        logo = queryAncestor(aNode,"td",5).nextElementSibling.querySelector("img").src;
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    return {
+        "name": qual + lang + " " + name,
+        "url": aNode.href,
+        "logo" : logo 
+    }
+    
+}
+
+function getElementGreenComponent(node){
+    try {
+        return node.style.color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)[2];
+    } catch (e){
+        return 0;
+    }
+}
+
+function greenElement(node){
+    return getElementGreenComponent(node) == 255;
+}
+
+function is3Column(aNode){
+    try{
+        if (!greenElement(aNode.firstElementChild))
+            return false;
+        if (queryAncestor(aNode,"tr",5).childElementCount != 3)
+            return false;
+        return true;
+    } catch (e){
+        return false;
+    }
+}
+
+function is4Column(aNode){
+    try{
+        if ( queryAncestor(aNode,"tr",5).childElementCount != 4 )
+            return false;
+        if ( queryAncestor(aNode,"td",5).nextElementSibling.nextElementSibling != null )
+            return false;
+        if ( queryAncestor(aNode,"td",5).previousElementSibling.previousElementSibling.previousElementSibling != null )
+            return false;
+        if (!greenElement(queryAncestor(aNode,"td",5).previousElementSibling.querySelector("img")))
+            return false;
+        return true;
+    } catch (e){
+        return false;
+    }
+}
+
+
+function uniqArray(a) {
+    var seen = {};
+    var out = [];
+    var len = a.length;
+    var j = 0;
+    for(var i = 0; i < len; i++) {
+         var item = a[i].url;
+         if(seen[item] !== 1) {
+               seen[item] = 1;
+               out[j++] = a[i];
+         }
+    }
+    return out;
+}
+
+
+function parsePage(url) {
     var output = new Array();
     try {
         var result = { "buffer": "" };
         var res = request('GET', url);
         const dom = new JSDOM(res.getBody("UTF8"));
-        dom.window.document.querySelectorAll("caption").forEach(captionNode => {
-            captionNode.parentNode.querySelectorAll("tbody").forEach(tableNode => {
-                tableNode.querySelectorAll("tr").forEach(trNode => {
-                    var isAcestreamRow = false;
-                    if (trNode.children.length == 4){
-                        trNode.children[0].querySelectorAll("a[href^=https]").forEach(n => {
-                            isAcestreamRow = true;
-                        });
-                        if (isAcestreamRow){
-                            var channelLogo = "";
-                            trNode.children[0].querySelectorAll("img").forEach(logoNode => {
-                                channelLogo = getImageUrl(url,logoNode.src);
-                            });
+        dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
+            try{
+                if (aceNode.href.toUpperCase == "ACESTREAM://")
+                    return;
 
-                            var quality = "";
-                            trNode.children[1].querySelectorAll("img").forEach(qualityImageNode => {
-                                if (qualityImageNode.alt != ""){
-                                    quality = "[" + qualityImageNode.alt + "]";
-                                } else {
-                                    var q = getQualityFromImage(qualityImageNode.src);
-                                    if (q != ""){
-                                        quality = "[" + q + "]";
-                                    }
-                                }                            
-                            });
+                if ( is3Column(aceNode)){
+                    output.push(parse3Column(aceNode));
+                }
+                else if (is4Column(aceNode)){
+                    output.push(parse4Column(aceNode));
+                }
 
-
-                            var channelName = "";
-                            var channelUrl = "";
-                            trNode.children[2].querySelectorAll("a").forEach(channelNode => {
-                                channelName = textNodesUnder(channelNode).split("&nbsp;").join("");
-                                channelUrl = channelNode.href;
-                            });
-        
-                            var channelLang = "";
-                            trNode.children[3].querySelectorAll("img").forEach(flagNode => {
-                                channelLang = "[" + getFlagLang(flagNode.src) + "]";
-                            });
-                            if (channelLang == ""){
-                                channelLang = "[" + textNodesUnder(trNode.children[3]) + "]";
-                            }
-        
-                            if ((channelLogo != "") && (quality != "") && (channelName != "") && (channelUrl != "")){
-                                output.push({
-                                    "name": quality + channelLang + " " + channelName,
-                                    "url": channelUrl,
-                                    "logo" : channelLogo 
-                                });                            
-                            }
-                        }
-                    }
-                });
-    
-            });
+            } catch (e){
+                return;
+            }
         });
-        if (includeM3u8) {
-            dom.window.document.querySelectorAll('a[href*=".m3u8"]').forEach(aNode => {
-                output.push({
-                    "name": getChannelName(aNode),
-                    "url": aNode.href
-                });
-            });
-        }
+    } catch (error) {
+        console.error('ERROR:');
+        console.error(error);
+    }
+    var tmp = uniqArray(output)
+    return tmp;
+}
+
+
+module.exports = function parse(url) {
+    var output = new Array();
+    try {
+        var result = { "buffer": "" };
+        var res = request('GET', url);
+        const dom = new JSDOM(res.getBody("UTF8"));
+        dom.window.document.querySelectorAll('a[href^="https://" i]').forEach(aceNode => {
+            try{
+                var match = aceNode.href.match()
+                if (!aceNode.href.startsWith(url))
+                    return;
+                var suffix = aceNode.href.substring(url.length);
+                if (suffix.match(/^[a-z0-9]+$/i) != null)
+                    output = output.concat(parsePage(aceNode.href));
+            } catch (e){
+                return;
+            }
+        });
     } catch (error) {
         console.error('ERROR:');
         console.error(error);

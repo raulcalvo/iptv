@@ -99,11 +99,6 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
-    },{
-        name: "includeM3u8",
-        type: "string",
-        maxLength: 3,
-        placeholder: "If true, parser will include .m3u8 links"
     }],
     "result": {
         "type": "json"
@@ -116,9 +111,9 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false)){
+    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval)){
         domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false);
+        domain.addSourceUrl(listName, req.query.url, req.query.interval);
     }
     sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
@@ -141,11 +136,6 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
-    },{
-        name: "includeM3u8",
-        type: "string",
-        maxLength: 3,
-        placeholder: "If true, parser will include .m3u8 links"
     }],
     "result": {
         "type": "json"
@@ -153,7 +143,7 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.includeM3u8 == "true" ? true : false);
+    domain.addSourceToAllLists(req.query.url, req.query.interval);
     domain.getListNamesOnArray().forEach( listName => {
         sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);

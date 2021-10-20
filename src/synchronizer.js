@@ -17,7 +17,7 @@ module.exports = class synchronizer {
         if (source.isSingleChannel){
             sync._domain.addChannel(listName, source.name, source.url );
         } else {
-            var channels = parser(source.url, source.includeM3u8);
+            var channels = parser(source.url);
             if (channels.length > 0){
                 channels.forEach( channel => {
                     sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
