@@ -51,9 +51,9 @@ function parse3Column(node){
         var n = queryAncestor(node,"tr", 5);
         while (n){
             if (n.childElementCount==1){
-                var imgNode = n.querySelector("img");
-                if ( imgNode ){
-                    name = imgNode.alt;
+                var imgs = n.querySelectorAll("img");
+                if (imgs.length == 1){
+                    name = imgs[0].alt;
                     break;
                 }
             }
