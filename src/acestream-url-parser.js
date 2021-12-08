@@ -52,7 +52,7 @@ function parse3Column(node){
         while (n){
             if (n.childElementCount==1){
                 var imgs = n.querySelectorAll("img");
-                if (imgs.length == 1){
+                if (n.querySelector("a") == null && imgs.length == 1){
                     name = imgs[0].alt;
                     break;
                 }
