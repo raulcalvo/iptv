@@ -65,14 +65,18 @@ function parse3Column(node){
 
     var qual = "";
     try{
-        qual = "["+ getQualityFromImage(node.querySelector("img").src)+"]";
+        var alt = queryAncestor(node, "td", 5).previousElementSibling.querySelector("img").alt;
+        if (alt != "todo"){
+            qual = "["+ queryAncestor(node, "td", 5).previousElementSibling.querySelector("img").alt +"]";
+        }
     } catch (e){
         console.log("Cannot find channel name");
     }
 
     var lang = "";
     try{
-        lang = "[" + getFlagLang(queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src)+ "]";
+        if (queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").alt.startsWith("Bandera") )
+            lang = "[" + getFlagLang(queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src)+ "]";
     } catch (e){
         console.log("Cannot find channel name");
     }
