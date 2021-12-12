@@ -136,6 +136,34 @@ function parse4Column(aNode){
     
 }
 
+function parse1Column(node){
+    // obtain name
+    var name = "";
+    try{
+        var n = queryAncestor(node,"tr", 5);
+        while (n){
+            if (n.childElementCount==1){
+                var imgs = n.querySelectorAll("img");
+                if (n.querySelector("a") == null && imgs.length == 1){
+                    name = imgs[0].alt;
+                    break;
+                }
+            }
+            n = n.previousElementSibling;
+        }
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    return {
+        "name": name,
+        "url": node.href,
+        "logo" : ""
+    }
+    
+}
+
+
 function getElementGreenComponent(node){
     try {
         return node.style.color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)[2];
@@ -176,6 +204,15 @@ function is4Column(aNode){
     }
 }
 
+function is1Column(aNode){
+    try{
+        if ( queryAncestor(aNode,"td",5).parentNode.childElementCount == 1 )
+            return true;
+        return false;
+    } catch (e){
+        return false;
+    }
+}
 
 function uniqArray(a) {
     var seen = {};
@@ -205,10 +242,19 @@ function parsePage(url) {
                     return;
 
                 if ( is3Column(aceNode)){
-                    output.push(parse3Column(aceNode));
+                    var obj = parse3Column(aceNode);
+                    if (obj.name != "")
+                        output.push(obj);
                 }
                 else if (is4Column(aceNode)){
-                    output.push(parse4Column(aceNode));
+                    var obj = parse4Column(aceNode);
+                    if (obj.name != "")
+                        output.push(obj);
+                }
+                else if (is1Column(aceNode)){
+                    var obj = parse1Column(aceNode);
+                    if (obj.name != "")
+                        output.push(obj);
                 }
 
             } catch (e){
@@ -235,7 +281,7 @@ module.exports = function parse(url) {
                 var match = aceNode.href.match()
                 if (!aceNode.href.startsWith(url))
                     return;
-                var suffix = aceNode.href.substring(url.length);
+                var suffix = aceNode.href.substring(url.length);    
                 if (suffix.match(/^[a-z0-9]+$/i) != null)
                     output = output.concat(parsePage(aceNode.href));
             } catch (e){
