@@ -163,6 +163,24 @@ function parse1Column(node){
     
 }
 
+function parseRootChannel(node){
+    // obtain name
+    var name = "";
+    try{
+        var n = queryAncestor(node,"td", 5);
+        var imgs = n.querySelectorAll("img");
+        name = imgs[0].alt;
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+    return {
+        "name": name,
+        "url": node.href,
+        "logo" : ""
+    }
+    
+}
+
 
 function getElementGreenComponent(node){
     try {
@@ -241,6 +259,8 @@ function parsePage(url) {
                 if (aceNode.href.toUpperCase == "ACESTREAM://")
                     return;
 
+                
+
                 if ( is3Column(aceNode)){
                     var obj = parse3Column(aceNode);
                     if (obj.name != "")
@@ -269,9 +289,35 @@ function parsePage(url) {
     return tmp;
 }
 
+function parseRootPage(url) {
+    var output = new Array();
+    try {
+        var result = { "buffer": "" };
+        var res = request('GET', url);
+        const dom = new JSDOM(res.getBody("UTF8"));
+        dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
+            try{
+                if (aceNode.href.toUpperCase == "ACESTREAM://")
+                    return;
+                
+                var obj = parseRootChannel(aceNode);
+                if (obj.name != "")
+                    output.push(obj);
+            } catch (e){
+                return;
+            }
+        });
+    } catch (error) {
+        console.error('ERROR:');
+        console.error(error);
+    }
+    var tmp = uniqArray(output)
+    return tmp;
+}
+parseRootChannel
 
 module.exports = function parse(url) {
-    var output = new Array();
+    var output = parseRootPage(url);
     try {
         var result = { "buffer": "" };
         var res = request('GET', url);
