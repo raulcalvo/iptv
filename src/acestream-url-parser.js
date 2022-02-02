@@ -3,6 +3,7 @@ var request = require('sync-request');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
+var unknownChannelNumber = 0;
 
 function textNodesUnder(node){
     var all = "";
@@ -70,7 +71,7 @@ function parse3Column(node){
             qual = "["+ queryAncestor(node, "td", 5).previousElementSibling.querySelector("img").alt +"]";
         }
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel quality");
     }
 
     var lang = "";
@@ -78,14 +79,14 @@ function parse3Column(node){
         if (queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").alt.startsWith("Bandera") )
             lang = "[" + getFlagLang(queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src)+ "]";
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel language");
     }
 
     var logo = "";
     try{
         logo = queryAncestor(node, "td", 5).nextElementSibling.querySelector("img").src;
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel logo");
     }
 
     return {
@@ -94,6 +95,87 @@ function parse3Column(node){
         "logo" : logo 
     }
     
+}
+
+function parse3Column2(node){
+    // obtain name
+    var name = "";
+    try{
+        name = queryAncestor(node,"tr", 5).firstElementChild.querySelector("img").alt;
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var qual = "";
+    try{
+        if (queryAncestor(node, "td",5).nextElementSibling != null)
+            qual = "["+ queryAncestor(node, "tbody", 5).firstElementChild.nextElementSibling.children[1].querySelector("img").alt +"]";
+        else
+            qual = "["+ queryAncestor(node, "tbody", 5).firstElementChild.nextElementSibling.children[2].querySelector("img").alt +"]";
+    } catch (e){
+        console.log("Cannot find channel quality");
+    }
+
+    var lang = "";
+    var logo = "";
+
+    return {
+        "name": qual + lang + " " + name,
+        "url": node.href,
+        "logo" : logo 
+    }
+    
+}
+
+
+function parse2Column(node){
+    // obtain name
+    var name = "";
+    try{
+        var n = queryAncestor(node,"tr", 5);
+        while (n){
+            if (!n.previousElementSibling){
+                var imgs = n.querySelectorAll("img");
+                if (n.querySelector("a") == null && imgs.length > 0){
+                    name = imgs[0].alt;
+                    break;
+                }
+            } else if (n.previousElementSibling.childElementCount != 1){
+                var imgs = n.querySelectorAll("img");
+                if (n.querySelector("a") == null && imgs.length > 0){
+                    name = imgs[0].alt;
+                    break;
+                }
+            }
+            n = n.previousElementSibling;
+        }
+    } catch (e){
+        console.log("Cannot find channel name");
+    }
+
+    var qual = "";
+    try{
+        var td = queryAncestor(node, "td", 5);
+        var prev_td = td.previousElementSibling;
+        var html = prev_td.innerHTML;
+        var img = prev_td.querySelector("img");
+        var alt = img.alt;
+        // var alt = queryAncestor(node, "td", 5).previousElementSibling.querySelector("img").alt;
+        if (alt != "todo"){
+            qual = "["+ queryAncestor(node, "td", 5).previousElementSibling.querySelector("img").alt +"]";
+        }
+    } catch (e){
+        console.log("Cannot find channel quality");
+    }
+
+    var lang = "";
+    var logo = "";
+
+    return {
+        "name": qual + lang + " " + name,
+        "url": node.href,
+        "logo" : logo 
+    }
 }
 
 
@@ -111,21 +193,21 @@ function parse4Column(aNode){
     try{
         qual = "["+ getQualityFromImage(queryAncestor(aNode,"td",5).previousElementSibling.querySelector("img").src)+"]";
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel quality");
     }
 
     var lang = "";
     try{
         lang = "[" + getFlagLang(queryAncestor(aNode,"td",5).nextElementSibling.querySelector("img").src)+ "]";
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel language");
     }
 
     var logo = "";
     try{
         logo = queryAncestor(aNode,"td",5).nextElementSibling.querySelector("img").src;
     } catch (e){
-        console.log("Cannot find channel name");
+        console.log("Cannot find channel logo");
     }
 
     return {
@@ -174,9 +256,9 @@ function parseRootChannel(node){
         console.log("Cannot find channel name");
     }
     return {
-        "name": name,
-        "url": node.href,
-        "logo" : ""
+        "name": qual + lang + " " + name,
+        "url": aNode.href,
+        "logo" : logo 
     }
     
 }
@@ -205,6 +287,34 @@ function is3Column(aNode){
         return false;
     }
 }
+
+
+function is3Column2(aNode){
+    try{
+        if (!greenElement(aNode.firstElementChild))
+            return false;
+        if (queryAncestor(aNode,"tbody",5).firstElementChild.childElementCount != 2)
+            return false;
+        return true;
+    } catch (e){
+        return false;
+    }
+}
+
+function is2Column(aNode){
+    try{
+        if (!greenElement(aNode.firstElementChild))
+            return false;
+        if (queryAncestor(aNode,"tr",5).childElementCount != 2)
+            return false;
+        return true;
+    } catch (e){
+        return false;
+    }
+}
+
+
+
 
 function is4Column(aNode){
     try{
@@ -247,6 +357,17 @@ function uniqArray(a) {
     return out;
 }
 
+function mustIgnore(aceNode){
+    try{
+        if (aceNode.querySelector("strong").innerHTML.startsWith("GP ")){
+            return true;;
+        }
+    } catch (e){
+        return false;
+    }
+    return false;
+}
+
 
 function parsePage(url) {
     var output = new Array();
@@ -256,26 +377,40 @@ function parsePage(url) {
         const dom = new JSDOM(res.getBody("UTF8"));
         dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
             try{
-                if (aceNode.href.toUpperCase == "ACESTREAM://")
+                if (aceNode.href.toUpperCase() == "ACESTREAM://")
+                    return;
+                
+                var obj = {};
+
+                if (!greenElement(aceNode.firstElementChild))
                     return;
 
-                
+                if (mustIgnore(aceNode)){
+                    return;
+                }
 
-                if ( is3Column(aceNode)){
-                    var obj = parse3Column(aceNode);
-                    if (obj.name != "")
-                        output.push(obj);
+                if ( is2Column(aceNode))
+                    obj = parse2Column(aceNode);
+                else if ( is3Column2(aceNode))
+                    obj = parse3Column2(aceNode);
+                else if ( is3Column(aceNode))
+                    obj = parse3Column(aceNode);
+                else if (is4Column(aceNode))
+                    obj = parse4Column(aceNode);
+                else if (is1Column(aceNode))
+                    obj = parse1Column(aceNode);
+                else{
+                    obj = {
+                        "name": "CHANNEL " + unknownChannelNumber++,
+                        "url": aceNode.href,
+                        "logo" : ""
+                    };
                 }
-                else if (is4Column(aceNode)){
-                    var obj = parse4Column(aceNode);
-                    if (obj.name != "")
-                        output.push(obj);
-                }
-                else if (is1Column(aceNode)){
-                    var obj = parse1Column(aceNode);
-                    if (obj.name != "")
-                        output.push(obj);
-                }
+
+                if (obj.name == " " || obj.name == "")
+                    obj.name = "CHANNEL " + unknownChannelNumber++;
+
+                output.push(obj);
 
             } catch (e){
                 return;
@@ -317,6 +452,7 @@ function parseRootPage(url) {
 parseRootChannel
 
 module.exports = function parse(url) {
+    unknownChannelNumber = 0;
     var output = parseRootPage(url);
     try {
         var result = { "buffer": "" };
