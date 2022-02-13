@@ -9,21 +9,27 @@ module.exports = class synchronizer {
             console.log("UNDEFINED PARAM!!!");
             return;
         }
-        
         sync._domain.clearChannels(listName, url);
         var source = sync._domain.getSource(listName,url);
+
         if (!source.hasOwnProperty("isSingleChannel"))
             return;
+
         if (source.isSingleChannel){
             sync._domain.addChannel(listName, source.name, source.url );
         } else {
             var channels = parser(source.url);
-            if (channels.length > 0){
+            source["numChannels"] = channels.length;
+            source["lastUpdate"] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+            channels.unshift({
+                "name": "Update: " +  new Date().toLocaleString() + " Channels: " + channels.length,
+                "url": "acestream://",
+                "logo" : ""
+            });
+        if (channels.length > 1){
                 channels.forEach( channel => {
                     sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
                 });
-                source["numChannels"] = channels.length;
-                source["lastUpdate"] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
             }
         }
         sync._domain.writeToDisk(listName);
