@@ -59,36 +59,15 @@ function parseAcestreamLink(aceNode){
     // obtain name
     var name = "";
     try{
-        var tr = queryAncestor(aceNode,"tr",5)
-        if (tr.firstElementChild.querySelector("span") == null){ // td is queality
-            name = tr.previousElementSibling.firstElementChild.querySelector("img").alt;
-        } else {
-            name = tr.firstElementChild.querySelector("img").alt;
-        }
+        name = aceNode.querySelector("img").alt;
     } catch (e){
         console.log("Cannot find channel name");
     }
 
     var qual = "";
-    try{
-        var tr = queryAncestor(aceNode,"tr",5)
-        if (tr.firstElementChild.querySelector("span") == null){ // td is queality
-            qual = "["+ getQualityFromImage(tr.firstElementChild.querySelector("img").src)+"]";
-        } else {
-            qual = "["+ getQualityFromImage(tr.firstElementChild.nextElementSibling.querySelector("img").src)+"]";
-        }
-    } catch (e){
-        console.log("Cannot find channel quality");
-    }
-
     var logo = "";
     try{
-        var tr = queryAncestor(aceNode,"tr",5)
-        if (tr.firstElementChild.querySelector("span") == null){ // td is queality
-            logo = tr.previousElementSibling.firstElementChild.querySelector("img").src;
-        } else {
-            logo =  tr.firstElementChild.querySelector("img").src;
-        }
+        logo = aceNode.querySelector("img").src;
     } catch (e){
         console.log("Cannot find channel logo");
     }
