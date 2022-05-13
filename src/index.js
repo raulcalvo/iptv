@@ -483,6 +483,24 @@ e.addPath(jsonPath, (req, res) => {
     res.send("Backup restored");
 });
 
-
+jsonPath = {
+    "path": "/original.html",
+    "description": "Return the first list source web page replacing acestream links with vlc:// links",
+    "method": "GET",
+    "params": [{
+        name: "list",
+        type: "string",
+        maxLength: 30,
+        placeholder: "List name (empty is default list)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+e.addPath(jsonPath, (req, res) => {
+    res.setHeader('Content-type', "text/html");
+    res.send(domain.getOriginal(getListNameFromParam(req.query.list)));
+});
 
 e.startListening();
+

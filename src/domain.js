@@ -1,4 +1,5 @@
 'use strict';
+var request = require('sync-request');
 const fs = require("fs");
 const { title } = require("process");
 
@@ -278,6 +279,14 @@ module.exports = class domain {
             link = url;
         return link;
     }
+
+    getChannelLinkPrefix(listName) {
+        if (url.startsWith("acestream://") && (url.length == 52) && this.isHex(url.substr(12)))
+            link = "http://" + this.getList(listName).setup.acestreamHost + ":" + this.getList(listName).setup.acestreamPort + "/ace/getstream?id=";
+        if (url.startsWith("http://") || url.startsWith("https://"))
+            link = url;
+        return link;
+    }
     
     
     getM3U8List(listName) {
@@ -300,4 +309,14 @@ module.exports = class domain {
         return output;
     }
 
+    getOriginal(listName) {
+        var url = Object.keys(this.getList(listName).sources)[0];
+        var baseUrl = url.substring(0, url.lastIndexOf("/"));
+        var output = new Array();
+        var result = { "buffer": "" };
+        var res = request('GET', url);
+        var baseUrl = url.substring(0, url.lastIndexOf("/"));
+        res = res.getBody("UTF8").replace(/acestream:\/\//g, "vlc://http://" + this.getList(listName).setup.acestreamHost + ":" + this.getList(listName).setup.acestreamPort + "/ace/getstream?id=");
+        return res.replace(/src=\"\/srv\/imgs/g, "src=\"" + baseUrl + "/srv/imgs");//"src=\"" + url);
+    }
 }
