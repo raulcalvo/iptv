@@ -299,13 +299,32 @@ module.exports = class domain {
         return output;
     } 
     
+    changeTimeZone(date, timeZone) {
+        var d = new Date(date);
+        var offset = d.getTimezoneOffset() * 60000;
+        return new Date(d - offset).toLocaleString("es-ES");
+      }
+
     getHTMLList(listName) {
+        var url = Object.keys(this.getList(listName).sources)[0];
+        // var lastUpdateTime = this.getList(listName).sources[url].lastUpdate.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });;
+        var lastUpdateTime = this.changeTimeZone(this.getList(listName).sources[url].lastUpdate, 'Europe/Madrid');
         var output = "";
-        output += "<html><head></head><body>";
+        output += "<!DOCTYPE html><html><title>" + listName.toUpperCase() + "</title><meta name=-viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\"><body>";
+        output += "<div class=\"w3-container\"><h2>" +  listName.toUpperCase() + " LIST</h2><p>Last update time: " + lastUpdateTime + "</p><ul class=\"w3-ul w3-card-4 w3-hoverable\">";
         this.getChannels(listName).forEach( channel =>{
-            output += "<a target='_blank' href='vlc://" + this.getChannelLink(listName, channel.url) + "'>"+ channel.name +"</a><br>";
+            if (!channel.name.startsWith("Update:")){
+                var url = "vlc://" + this.getChannelLink(listName, channel.url);
+                output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
+                output += "    <img src=\"" + channel.logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
+                output += "    <div class=\"w3-bar-item\">";
+                output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
+                // output += "    <span>Web Designer</span>";
+                output += "    </div>";
+                output += "</li>";
+            }
         });
-        output += "</body></html>"
+        output += "</ul></div></body></html>";  
         return output;
     }
 
