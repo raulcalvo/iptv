@@ -310,7 +310,7 @@ module.exports = class domain {
         // var lastUpdateTime = this.getList(listName).sources[url].lastUpdate.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });;
         var lastUpdateTime = this.changeTimeZone(this.getList(listName).sources[url].lastUpdate, 'Europe/Madrid');
         var output = "";
-        output += "<!DOCTYPE html><html><title>" + listName.toUpperCase() + "</title><meta name=-viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\"><body>";
+        output += "<!DOCTYPE html><html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\"><title>" + listName.toUpperCase() + "</title><meta name=-viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\"><body>";
         output += "<div class=\"w3-container\"><h2>" +  listName.toUpperCase() + " LIST</h2><p>Last update time: " + lastUpdateTime + "</p><ul class=\"w3-ul w3-card-4 w3-hoverable\">";
         this.getChannels(listName).forEach( channel =>{
             if (!channel.name.startsWith("Update:")){
