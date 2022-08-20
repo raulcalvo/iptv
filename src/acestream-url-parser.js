@@ -26,20 +26,6 @@ function queryAncestor(node, elementType, maxDepth){
     return valid ? node : queryAncestor(node.parentNode, elementType, maxDepth - 1);
 }
 
-function getElementGreenComponent(node){
-    try {
-        return node.style.color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)[2];
-    } catch (e){
-        return 0;
-    }
-}
-
-function greenElement(node){
-    return getElementGreenComponent(node) == 255;
-}
-
-
-
 function uniqArray(a) {
     var seen = {};
     var out = [];
@@ -90,9 +76,6 @@ module.exports = function parse(url) {
         dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
             try{
                 if (aceNode.href.toUpperCase() == "ACESTREAM://")
-                    return;
-                
-                if (!greenElement(aceNode.firstElementChild))
                     return;
 
                 var obj = parseAcestreamLink(aceNode);
