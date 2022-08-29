@@ -20,7 +20,9 @@ module.exports = class synchronizer {
         } else {
             var channels = parser(source.url);
             source["numChannels"] = channels.length;
-            source["lastUpdate"] = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+            var date = new Date();
+            source["lastUpdate"] = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
+            source["lastUpdateEpoch"] = Math.floor(date.getTime() / 1000);
             channels.unshift({
                 "name": "Update: " +  new Date().toLocaleString() + " Channels: " + channels.length,
                 "url": "acestream://",

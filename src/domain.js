@@ -307,11 +307,43 @@ module.exports = class domain {
 
     getHTMLList(listName) {
         var url = Object.keys(this.getList(listName).sources)[0];
-        // var lastUpdateTime = this.getList(listName).sources[url].lastUpdate.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });;
-        var lastUpdateTime = this.changeTimeZone(this.getList(listName).sources[url].lastUpdate, 'Europe/Madrid');
+        var lastUpdateTime = this.getList(listName).sources[url].lastUpdateEpoch;
+        var updateMinutes = this.getList(listName).sources[url].updateTime;
         var output = "";
-        output += "<!DOCTYPE html><html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\"><title>" + listName.toUpperCase() + "</title><meta name=-viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\"><body>";
-        output += "<div class=\"w3-container\"><h2>" +  listName.toUpperCase() + " LIST</h2><p>Last update time: " + lastUpdateTime + "</p><ul class=\"w3-ul w3-card-4 w3-hoverable\">";
+        output += "<!DOCTYPE html>";
+        output += "<html>";
+        output += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">";
+        output += "<title>" + listName.toUpperCase() + "</title>";
+        output += "<meta name=-viewport\" content=\"width=device-width, initial-scale=1\">";
+        output += "<link rel=\"stylesheet\" href=\"https://www.w3schools.com/w3css/4/w3.css\">";
+        output += "<head>";
+        output += "    <style>";
+        output += "        .label {";
+        output += "            color: white;";
+        output += "            padding: 8px;";
+        output += "            font-family: Arial;";
+        output += "            border-radius: 5px;";
+        output += "        }";
+        output += "        /* Green */";
+        output += "        .ok {";
+        output += "            background-color: #04AA6D;";
+        output += "        }";
+        output += "        /* Red */";
+        output += "        .ko {";
+        output += "            background-color: #f44336;";
+        output += "        }";
+        output += "    </style>";
+        output += "</head>";
+        output += "<body>";
+        output += "    <div class=\"w3-container\">";
+        output += "        <h2>" + listName.toUpperCase() + " LIST</h2>";
+        output += "        <p>" + this.getChannels(listName).length + " channels</p>";
+        output += "        <p id=\"updateMinutes\" hidden>" + updateMinutes + "</p>";
+        output += "        <p id=\"timestamp\" hidden>" + lastUpdateTime + "</p>";
+        output += "        <span id=\"updateLabel\" class=\"label\"></span>";
+        output += "        <p></p>";
+        output += "        <ul class=\"w3-ul w3-card-4 w3-hoverable\">";
+        
         this.getChannels(listName).forEach( channel =>{
             if (!channel.name.startsWith("Update:")){
                 var url = "vlc://" + this.getChannelLink(listName, channel.url);
@@ -319,12 +351,30 @@ module.exports = class domain {
                 output += "    <img src=\"" + channel.logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
                 output += "    <div class=\"w3-bar-item\">";
                 output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
-                // output += "    <span>Web Designer</span>";
                 output += "    </div>";
                 output += "</li>";
             }
-        });
-        output += "</ul></div></body></html>";  
+        });        
+        
+        output += "</ul>";
+        output += "    </div>";
+        output += "    <script>";
+        output += "        var now = new Date();";
+        output += "        var updateDate = new Date(0); updateDate.setUTCSeconds(document.getElementById(\"timestamp\").innerHTML);";
+        output += "        var minutesAgo = Math.floor(new Date(now - updateDate).getTime() / 60000);";
+        output += "        var updateMinutes = document.getElementById(\"updateMinutes\").innerHTML;";
+        output += "        if (minutesAgo > updateMinutes) {";
+        output += "            document.getElementById(\"updateLabel\").innerHTML = \"Outdated (\" + minutesAgo + \" minutes ago)\";";
+        output += "            document.getElementById(\"updateLabel\").classList = \"label ko\";";
+        output += "        }";
+        output += "        else {";
+        output += "            document.getElementById(\"updateLabel\").innerHTML = \"Updated (\" + minutesAgo + \" minutes ago)\";";
+        output += "            document.getElementById(\"updateLabel\").classList = \"label ok\";";
+        output += "        }";
+        output += "    </script>";
+        output += "</body>";
+        output += "</html>";
+
         return output;
     }
 
