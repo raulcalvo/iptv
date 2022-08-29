@@ -6,6 +6,8 @@ global.__basedir = __dirname;
 process.env.UV_THREADPOOL_SIZE = 100;
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+const path = require('path');
+const express = require("express");
 const logger = require("logger-to-memory");
 const api = require("express-simple-api");
 const fs = require('fs');
@@ -501,6 +503,7 @@ e.addPath(jsonPath, (req, res) => {
     res.setHeader('Content-type', "text/html");
     res.send(domain.getOriginal(getListNameFromParam(req.query.list)));
 });
+e._express.use(express.static(path.join(__dirname, 'favicon')));
 
 e.startListening();
 

@@ -333,6 +333,13 @@ module.exports = class domain {
         output += "            background-color: #f44336;";
         output += "        }";
         output += "    </style>";
+        output += "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">";
+        output += "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">";
+        output += "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">";
+        output += "<link rel=\"manifest\" href=\"/site.webmanifest\">";
+        output += "<link rel=\"mask-icon\" href=\"/safari-pinned-tab.svg\" color=\"#5bbad5\">";
+        output += "<meta name=\"msapplication-TileColor\" content=\"#da532c\">";
+        output += "<meta name=\"theme-color\" content=\"#ffffff\">";        
         output += "</head>";
         output += "<body>";
         output += "    <div class=\"w3-container\">";
