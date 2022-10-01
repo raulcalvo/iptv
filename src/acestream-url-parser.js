@@ -2,6 +2,7 @@
 var request = require('sync-request');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const M3U8FileParser = require('m3u8-file-parser');
 
 var unknownChannelNumber = 0;
 
@@ -65,14 +66,28 @@ function parseAcestreamLink(aceNode){
     }
 }
 
+function parseM3u8(buffer){
+    const reader = new M3U8FileParser();
+    reader.read(buffer);
+    var output = new Array();
+    var result = reader.getResult();
+    result.segments.forEach(function(segment) {
+        if (segment.url.indexOf("acestream") == 0){
+            output.push({
+                "name": segment.inf.title,
+                "url": segment.url,
+                "logo": segment.inf.tvgLogo
+            });
+        }
+    });
+  return output;
+}
 
-module.exports = function parse(url) {
+function parseHtml(inputBuffer){
     var unknownChannelNumber = 0;
     var output = new Array();
     try {
-        var result = { "buffer": "" };
-        var res = request('GET', url);
-        const dom = new JSDOM(res.getBody("UTF8"));
+        const dom = new JSDOM(inputBuffer);
         dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
             try{
                 if (aceNode.href.toUpperCase() == "ACESTREAM://")
@@ -96,6 +111,23 @@ module.exports = function parse(url) {
         console.error('ERROR:');
         console.error(error);
     }
-    var tmp = uniqArray(output)
-    return tmp;
+    return uniqArray(output);
+}
+
+
+module.exports = function parse(url, isM3u8) {
+    var unknownChannelNumber = 0;
+    var output = new Array();
+    try {
+        var buffer = request('GET', url).getBody("UTF8");
+
+        if (buffer.indexOf("#EXTM3U")==0)
+            return parseM3u8(buffer);
+        else
+            return parseHtml(buffer);
+    } catch (error) {
+        console.error('ERROR:');
+        console.error(error);
+    }
+    return output;
 }
