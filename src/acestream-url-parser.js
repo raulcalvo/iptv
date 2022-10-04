@@ -194,7 +194,7 @@ async function parseHtml(buffer, source){
 
 async function asyncDownload(url){
     var result = "";
-    const browser = await webkit.launch();
+    const browser = await webkit.launch({ headless: true});
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle' });
