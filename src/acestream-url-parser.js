@@ -3,22 +3,8 @@ var request = require('sync-request');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const M3U8FileParser = require('m3u8-file-parser');
+const { chromium } = require('playwright');
 
-var unknownChannelNumber = 0;
-
-function getQualityFromImage(imageURL){
-    if (imageURL.indexOf("1080") != -1){
-        return "1080";
-    }
-    if (imageURL.indexOf("720") != -1){
-        return "720";
-    }
-    if (imageURL.indexOf("480") != -1){
-        return "480";
-    }
-    return "";
-
-}
 
 function queryAncestor(node, elementType, maxDepth){
     if (maxDepth == 0)
@@ -42,30 +28,6 @@ function uniqArray(a) {
     return out;
 }
 
-function parseAcestreamLink(aceNode){
-    // obtain name
-    var name = "";
-    try{
-        name = aceNode.querySelector("img").alt;
-    } catch (e){
-        console.log("Cannot find channel name");
-    }
-
-    var qual = "";
-    var logo = "";
-    try{
-        logo = aceNode.querySelector("img").src;
-    } catch (e){
-        console.log("Cannot find channel logo");
-    }
-
-    return {
-        "name": name != "" ? qual + " " + name : "",
-        "url": aceNode.href,
-        "logo" : logo 
-    }
-}
-
 function parseM3u8(buffer){
     const reader = new M3U8FileParser();
     reader.read(buffer);
@@ -83,30 +45,146 @@ function parseM3u8(buffer){
   return output;
 }
 
-function parseHtml(inputBuffer){
-    var unknownChannelNumber = 0;
+function getAcestreamLinkInAttributes(node){
+    var aceRegex = /[0-9a-z]{40}/;
+    for(let attrib of node.attributes){
+        var m = attrib.value.match(aceRegex);
+        if (m){
+            return m[0];
+        }
+    }
+    if (node.innerHTML && node.innerHTML.indexOf("<") == -1){
+        var m = node.innerHTML.match(aceRegex);
+        if (m){
+                return m[0];
+        }
+    }
+
+    return "";
+}
+
+function isChannelName(input){
+    var seeds = [
+        "movistar",
+        "liga",
+        "m. ",
+        "m.l.",
+        "dazn",
+        "eurosport",
+        "espn",
+        "sport",
+        "sports",
+        "football",
+        "futbol",
+        "premier",
+        "soccer",
+        "pimple",
+        "f1",
+        "fox",
+        "bemad",
+        "ufc",
+        "nfl",
+        "nba",
+        "formula",
+        "vamos",
+        "smartbank",
+        "barça",
+        "deporte",
+        "# ",
+        "gol",
+        "goal",
+        "campeones",
+        "champion",
+        "cuatro",
+        "t5",
+        "telecinco",
+        "setanta",
+        "la 1",
+        "rtve",
+        "sexta",
+        "antena",
+        "live",
+        "national",
+        "canal",
+        "league",
+        "gp",
+        "moto",
+        "car",
+        "basket",
+        "tenis",
+        "arena",
+        "ace 1",
+        "ace 2",
+        "ligue"
+    ];
+    var aceRegex = /[0-9a-z]{40}/
+    for(var index = 0 ; index < seeds.length; ++index){
+        if ( (input.toUpperCase().indexOf(seeds[index].toUpperCase()) != -1) && !aceRegex.test(input))
+            return true;
+    };
+    return false;
+}
+
+function getAcestreamLinkName(preOrderArray, nodeIndex, positionChannelName){
+    // obtain name
+    try{
+        return preOrderArray[nodeIndex].querySelector("img").alt;
+    } catch (e){
+        console.log("Cannot find channel name in alt of image");
+    }
+
+    var inc = positionChannelName == "after" ? 1 : -1;
+    var index = nodeIndex + inc;
+    var maxDist = 10;
+    while (Math.abs(inc)<maxDist){
+        if ( (!preOrderArray[index].firstElementChild) && (isChannelName(preOrderArray[index].innerHTML)) )
+            return preOrderArray[index].innerHTML;
+        if (positionChannelName == "after"){
+            if (inc < 0)
+                --inc;
+        } else if (positionChannelName == "before") {
+            if (inc > 0)
+                ++inc;
+        }
+        inc = -inc;
+        // check bounds
+        index = Math.max(Math.min(nodeIndex + inc,preOrderArray.length-1),0);
+    }
+    return "";
+}
+
+function getAcestreamLinkLogo(node, preOrder, nodeIndex){
+    try{
+        return preOrderArray[nodeIndex].querySelector("img").src;
+    } catch (e){
+        console.log("Cannot find channel logo");
+    }
+    return "";
+}
+
+async function parseHtml(buffer, source){
+    source.positionChannelName = "before";
     var output = new Array();
+    var aceRegex = /[0-9a-z]{40}/
     try {
-        const dom = new JSDOM(inputBuffer);
-        dom.window.document.querySelectorAll('a[href^="acestream://" i]').forEach(aceNode => {
-            try{
-                if (aceNode.href.toUpperCase() == "ACESTREAM://")
-                    return;
-
-                var obj = parseAcestreamLink(aceNode);
-
-                if (obj.name == "")
-                    obj.name = "CHANNEL " + unknownChannelNumber++;
-
-                if (obj.logo == "" || !obj.logo.startsWith("http")){
-                    obj.logo = url.substring(0, url.lastIndexOf("/") + 1) + obj.logo;
+        const dom = new JSDOM(buffer);
+        var nodes = dom.window.document.getElementsByTagName("*");
+        for(let nodeIndex = 0; nodeIndex < nodes.length; ++nodeIndex){
+            var eleme =nodes[nodeIndex]; 
+            if (nodes[nodeIndex].firstElementChild)
+                continue;
+            var acestreamLink = getAcestreamLinkInAttributes(nodes[nodeIndex]);
+            if (acestreamLink != ""){
+                var channelName = getAcestreamLinkName(nodes, nodeIndex, source.positionChannelName);
+                if (channelName.length != ""){
+                    output.push({
+                        "name": channelName,
+                        "url": "acestream://" + acestreamLink,
+                        "logo": getAcestreamLinkLogo(nodes, nodeIndex)
+                    });
                 }
-                output.push(obj);
-
-            } catch (e){
-                return;
-            }
-        });
+            }        
+        }      
     } catch (error) {
         console.error('ERROR:');
         console.error(error);
@@ -114,17 +192,32 @@ function parseHtml(inputBuffer){
     return uniqArray(output);
 }
 
+async function asyncDownload(url){
+    var result = "";
+    const browser = await chromium.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'networkidle' });
+    var content = await page.content();
+    var pre = await page.innerHTML("pre");
+    if (pre.indexOf("#EXTM3U")==0)
+        result = pre;
+    else 
+        result = content;
+    await browser.close();
 
-module.exports = function parse(url, isM3u8) {
-    var unknownChannelNumber = 0;
+    return result;
+}
+
+module.exports = async function parse(source) {
     var output = new Array();
     try {
-        var buffer = request('GET', url).getBody("UTF8");
+        var buffer = await asyncDownload(source.url);
 
         if (buffer.indexOf("#EXTM3U")==0)
             return parseM3u8(buffer);
         else
-            return parseHtml(buffer);
+            return parseHtml(buffer, source);
     } catch (error) {
         console.error('ERROR:');
         console.error(error);

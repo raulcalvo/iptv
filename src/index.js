@@ -101,6 +101,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
+    }, {
+        name: "positionChannelName",
+        type: "string",
+        maxLength: 10,
+        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -113,9 +118,9 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval)){
+    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName)){
         domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval);
+        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName);
     }
     sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
@@ -138,6 +143,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
+    }, {
+        name: "positionChannelName",
+        type: "string",
+        maxLength: 10,
+        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -145,7 +155,7 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval);
+    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.positionChannelName);
     domain.getListNamesOnArray().forEach( listName => {
         sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);

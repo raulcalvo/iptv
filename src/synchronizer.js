@@ -3,7 +3,7 @@ const fs = require("fs");
 const parser = require("./acestream-url-parser.js");
 
 module.exports = class synchronizer {
-    updateChannels(listName, url, sync) {
+    async updateChannels(listName, url, sync) {
         console.log("Updating channels from list " + listName + " and source " + url + ")");
         if (typeof listName === 'undefined') {
             console.log("UNDEFINED PARAM!!!");
@@ -18,7 +18,7 @@ module.exports = class synchronizer {
         if (source.isSingleChannel){
             sync._domain.addChannel(listName, source.name, source.url );
         } else {
-            var channels = parser(source.url);
+            var channels = await parser(source);
             source["numChannels"] = channels.length;
             var date = new Date();
             source["lastUpdate"] = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
