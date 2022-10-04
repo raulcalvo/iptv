@@ -74,12 +74,11 @@ module.exports = class domain {
         }
     }
         
-    newSourceUrl(url, updateTime, positionChannelName) {
+    newSourceUrl(url, updateTime) {
         return {
             "url": url,
             "isSingleChannel" : false,
-            "updateTime" : updateTime,
-            "positionChannelName" : positionChannelName
+            "updateTime" : updateTime
         };
     }
     
@@ -99,17 +98,17 @@ module.exports = class domain {
         return false;
     }
 
-    addSourceUrl(list, url, updateTime, positionChannelName){
+    addSourceUrl(list, url, updateTime){
         if (this.listExists(list) && !this.sourceExists(list, url)){
-            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime, positionChannelName);
+            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime);
             return true;
         }
         return false;
     }
 
-    addSourceToAllLists(url, updateTime, positionChannelName){
+    addSourceToAllLists(url, updateTime){
         Object.keys(this._d.lists).forEach( listName => {
-            this.addSourceUrl( listName, url, updateTime, positionChannelName);
+            this.addSourceUrl( listName, url, updateTime);
         });
     }
 

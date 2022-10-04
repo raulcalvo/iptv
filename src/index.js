@@ -101,11 +101,6 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
-    }, {
-        name: "positionChannelName",
-        type: "string",
-        maxLength: 10,
-        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -118,9 +113,9 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName)){
+    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval)){
         domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName);
+        domain.addSourceUrl(listName, req.query.url, req.query.interval);
     }
     sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
@@ -143,11 +138,6 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
-    }, {
-        name: "positionChannelName",
-        type: "string",
-        maxLength: 10,
-        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -155,7 +145,7 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.positionChannelName);
+    domain.addSourceToAllLists(req.query.url, req.query.interval);
     domain.getListNamesOnArray().forEach( listName => {
         sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);
@@ -516,4 +506,3 @@ e.addPath(jsonPath, (req, res) => {
 e._express.use(express.static(path.join(__dirname, 'favicon')));
 
 e.startListening();
-
