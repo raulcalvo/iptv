@@ -3,7 +3,7 @@ var request = require('sync-request');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const M3U8FileParser = require('m3u8-file-parser');
-const { chromium } = require('playwright');
+const { webkit } = require('playwright');
 
 
 function queryAncestor(node, elementType, maxDepth){
@@ -194,7 +194,7 @@ async function parseHtml(buffer, source){
 
 async function asyncDownload(url){
     var result = "";
-    const browser = await chromium.launch();
+    const browser = await webkit.launch();
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle' });
