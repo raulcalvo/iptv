@@ -1,8 +1,9 @@
-FROM node:10-alpine
-RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app 
+FROM mcr.microsoft.com/playwright:v1.24.0-focal
+RUN mkdir -p /home/node/app/node_modules
 WORKDIR /home/node/app
-USER node
-COPY --chown=node:node ./src/ ./
+COPY ./src/ ./ 
+RUN ls
 RUN npm install
+RUN cp -R /ms-playwright/chromium-1015 /ms-playwright/chromium-1024
 EXPOSE 8080
 CMD [ "node", "index.js" ]

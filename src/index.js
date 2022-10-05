@@ -101,6 +101,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
+    }, {
+        name: "positionChannelName",
+        type: "string",
+        maxLength: 10,
+        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -113,9 +118,9 @@ e.addPath(jsonPath, (req, res) => {
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval)){
+    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName)){
         domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval);
+        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName);
     }
     sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
@@ -138,6 +143,11 @@ jsonPath = {
         type: "string",
         maxLength: 3,
         placeholder: "Automatic update time in minutes (-1 no automatic update)"
+    }, {
+        name: "positionChannelName",
+        type: "string",
+        maxLength: 10,
+        placeholder: "how to begin searching for channel title when parsing (after|before)"
     }],
     "result": {
         "type": "json"
@@ -145,7 +155,7 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval);
+    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.positionChannelName);
     domain.getListNamesOnArray().forEach( listName => {
         sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);
@@ -503,6 +513,66 @@ e.addPath(jsonPath, (req, res) => {
     res.setHeader('Content-type', "text/html");
     res.send(domain.getOriginal(getListNameFromParam(req.query.list)));
 });
+
+jsonPath = {
+    "path": "/api/testParseUrl",
+    "description": "Parse webside and output channels",
+    "method": "GET",
+    "params": [{
+        name: "Source Name",
+        type: "string",
+        maxLength: 30,
+        placeholder: "Source name"
+    }, {
+        name: "url",
+        type: "string",
+        maxLength: 300,
+        placeholder: "url to parse"
+    }, {
+        name: "positionChannelName",
+        type: "string",
+        maxLength: 10,
+        placeholder: "how to begin searching for channel title when parsing (after|before)"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, async (req, res) => {
+    var source = domain.newSourceUrl(req.query.url, 30, req.query.positionChannelName);
+    const parser = require("./acestream-url-parser.js");
+    var channels = await parser(source);
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(channels));
+});
+
+jsonPath = {
+    "path": "/api/testParseJsonSource",
+    "description": "Parse webside and output channels",
+    "method": "GET",
+    "params": [{
+        name: "json",
+        type: "string",
+        maxLength: 4096,
+        placeholder: "json source"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, async (req, res) => {
+    var json = JSON.parse(req.query.json);
+    var source = domain.newSourceUrl(json.url, 30, json.position_channel_name);
+    const parser = require("./acestream-url-parser.js");
+    var channels = await parser(source);
+    res.setHeader('Content-type', "application/json");
+    res.send(JSON.stringify(channels));
+});
+
+
 e._express.use(express.static(path.join(__dirname, 'favicon')));
 
 e.startListening();
+
