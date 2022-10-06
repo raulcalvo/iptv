@@ -306,7 +306,7 @@ module.exports = class domain {
         return new Date(d - offset).toLocaleString("es-ES");
       }
 
-    getHTMLList(listName) {
+    getHTMLList(listName, defaultLogo) {
         var url = Object.keys(this.getList(listName).sources)[0];
         var lastUpdateTime = this.getList(listName).sources[url].lastUpdateEpoch;
         var updateMinutes = this.getList(listName).sources[url].updateTime;
@@ -354,9 +354,11 @@ module.exports = class domain {
         
         this.getChannels(listName).forEach( channel =>{
             if (!channel.name.startsWith("Update:")){
+                var logo = channel.logo ? channel.logo : defaultLogo;
+                if (channel.logo)
                 var url = "vlc://" + this.getChannelLink(listName, channel.url);
                 output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
-                output += "    <img src=\"" + channel.logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
+                output += "    <img src=\"" + logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
                 output += "    <div class=\"w3-bar-item\">";
                 output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
                 output += "    </div>";

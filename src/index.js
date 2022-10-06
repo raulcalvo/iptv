@@ -112,7 +112,7 @@ jsonPath = {
     }
 };
 
-e.addPath(jsonPath, (req, res) => {
+e.addPath(jsonPath,(req, res) => {
     const listName = getListNameFromParam(req.query.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
@@ -240,7 +240,7 @@ jsonPath = {
 };
 e.addPath(jsonPath, (req, res) => {
     res.setHeader('Content-type', "text/html");
-    res.send(domain.getHTMLList(getListNameFromParam(req.query.list)));
+    res.send(domain.getHTMLList(getListNameFromParam(req.query.list), req.protocol + '://' + req.get('host') + "/android-chrome-192x192.png"));
 });
 
 
