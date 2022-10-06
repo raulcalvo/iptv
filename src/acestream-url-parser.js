@@ -227,14 +227,8 @@ async function asyncDownload(url){
     const page = await context.newPage();
     await page.goto(url, { waitUntil: 'networkidle' });
     var content = await page.content();
-    // var pre = await page.innerHTML("pre");
-    // if (pre.indexOf("#EXTM3U")==0)
-    //     result = pre;
-    // else 
-        result = content;
     await browser.close();
-
-    return result;
+    return content;
 }
 
 module.exports = async function parse(source) {

@@ -112,7 +112,7 @@ jsonPath = {
     }
 };
 
-e.addPath(jsonPath,(req, res) => {
+e.addPath(jsonPath, async (req, res) => {
     const listName = getListNameFromParam(req.query.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
@@ -122,7 +122,7 @@ e.addPath(jsonPath,(req, res) => {
         domain.removeSource(listName, req.query.url);
         domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName);
     }
-    sync.updateChannels(listName, req.query.url, sync);
+    await sync.updateChannels(listName, req.query.url, sync);
     sync.launchSourceSync(listName, req.query.url);
     res.setHeader('Content-type', "application/json");
     res.send(JSON.stringify(domain.getChannels(listName)));
@@ -154,10 +154,10 @@ jsonPath = {
     }
 };
 
-e.addPath(jsonPath, (req, res) => {
+e.addPath(jsonPath, async (req, res) => {
     domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.positionChannelName);
-    domain.getListNamesOnArray().forEach( listName => {
-        sync.updateChannels(listName, req.query.url, sync);
+    domain.getListNamesOnArray().forEach( async listName => {
+        await sync.updateChannels(listName, req.query.url, sync);
         sync.launchSourceSync(listName, req.query.url);
     });
     res.setHeader('Content-type', "application/json");
@@ -192,14 +192,14 @@ jsonPath = {
     }
 };
 
-e.addPath(jsonPath, (req, res) => {
+e.addPath(jsonPath, async (req, res) => {
     const listName = getListNameFromParam(req.query.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
     domain.addSourceChannel( listName, req.query.name, req.query.url)
-    sync.updateChannels(listName, req.query.url, sync);
+    await sync.updateChannels(listName, req.query.url, sync);
     res.setHeader('Content-type', "application/json");
     res.send(JSON.stringify(domain.getChannels(listName)));
 });

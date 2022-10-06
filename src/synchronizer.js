@@ -35,6 +35,7 @@ module.exports = class synchronizer {
             }
         }
         sync._domain.writeToDisk(listName);
+        return true;
     }
 
     launchSourceSync(list, url){
@@ -44,13 +45,13 @@ module.exports = class synchronizer {
         var source = this._domain.getSource(list, url);
         if (source.hasOwnProperty("updateTime")){
             this._intervals[list][url] = setInterval( this.updateChannels, this._domain.getSource(list, url).updateTime * 60 * 1000, list, url, this);
-            this.updateChannels(list, url, this);
         }
     }
 
     launchListSync(listName){
         this.clearIntervals(listName);
-        Object.keys(this._domain.getSources(listName)).forEach( url =>{
+        Object.keys(this._domain.getSources(listName)).forEach( async url =>{
+            await this.updateChannels(listName, url, this);
             this.launchSourceSync(listName, url);
         } );
     }    
