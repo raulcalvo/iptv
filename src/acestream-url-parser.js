@@ -5,7 +5,7 @@ const { JSDOM } = jsdom;
 const M3U8FileParser = require('m3u8-file-parser');
 const { chromium } = require('playwright');
 
-const fs = require("fs");
+//const fs = require("fs");
 
 function queryAncestor(node, elementType, maxDepth){
     if (maxDepth == 0)
@@ -235,7 +235,7 @@ module.exports = async function parse(source) {
     var output = new Array();
     try {
         var buffer = await asyncDownload(source.url);
-        fs.writeFileSync("donwloaded.html", buffer);
+        //fs.writeFileSync("donwloaded.html", buffer);
         if (buffer.indexOf("#EXTM3U")==0)
             return parseM3u8(buffer);
         else{
