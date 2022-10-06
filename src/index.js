@@ -129,81 +129,6 @@ e.addPath(jsonPath, async (req, res) => {
 
 });
 
-jsonPath = {
-    "path": "/api/addSource",
-    "description": "Parse webside and replace acestream links in order to be able to open them with local acestream",
-    "method": "GET",
-    "params": [{
-        name: "url",
-        type: "string",
-        maxLength: 300,
-        placeholder: "url to parse"
-    }, {
-        name: "interval",
-        type: "string",
-        maxLength: 3,
-        placeholder: "Automatic update time in minutes (-1 no automatic update)"
-    }, {
-        name: "positionChannelName",
-        type: "string",
-        maxLength: 10,
-        placeholder: "how to begin searching for channel title when parsing (after|before)"
-    }],
-    "result": {
-        "type": "json"
-    }
-};
-
-e.addPath(jsonPath, async (req, res) => {
-    domain.addSourceToAllLists(req.query.url, req.query.interval, req.query.positionChannelName);
-    domain.getListNamesOnArray().forEach( async listName => {
-        await sync.updateChannels(listName, req.query.url, sync);
-        sync.launchSourceSync(listName, req.query.url);
-    });
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(domain._d));
-});
-
-
-
-
-jsonPath = {
-    "path": "/api/addChanelSourceToList",
-    "description": "Set channel",
-    "method": "GET",
-    "params": [{
-        name: "list",
-        type: "string",
-        maxLength: 30,
-        placeholder: "List name (empty is default list)"
-    }, {
-        name: "name",
-        type: "string",
-        maxLength: 100,
-        placeholder: "Channel name"
-    }, {
-        name: "url",
-        type: "string",
-        maxLength: 300,
-        placeholder: "Channel url: http / https / acestream"
-    }],
-    "result": {
-        "type": "json"
-    }
-};
-
-e.addPath(jsonPath, async (req, res) => {
-    const listName = getListNameFromParam(req.query.list);
-    if (!domain.listExists(listName)){
-        res.send("Error: list " + listName + " doesn't exist.");
-        return;
-    }
-    domain.addSourceChannel( listName, req.query.name, req.query.url)
-    await sync.updateChannels(listName, req.query.url, sync);
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(domain.getChannels(listName)));
-});
-
 
 jsonPath = {
     "path": "/tv.m3u8",
@@ -285,7 +210,7 @@ e.addPath(jsonPath, (req, res) => {
 });
 
 jsonPath = {
-    "path": "/api/setupList",
+    "path": "/api/modifyList",
     "description": "Setup list",
     "method": "GET",
     "params": [{
@@ -320,7 +245,7 @@ e.addPath(jsonPath, (req, res) => {
         "acestreamHost" : req.query.acestreamHost,
         "acestreamPort" : req.query.acestreamPort
     };
-    if (!domain.setupList(listName, setup)){
+    if (!domain.modifyList(listName, setup)){
         res.send("Error aplying setup to list " + listName);
         return;
     }
@@ -417,28 +342,6 @@ e.addPath(jsonPath, (req, res) => {
 });
 
 jsonPath = {
-    "path": "/api/removeSourceFromAllList",
-    "description": "Remove list",
-    "method": "GET",
-    "params": [{
-        name: "url",
-        type: "string",
-        maxLength: 512,
-        placeholder: "Url (source) to remove"
-    }],
-    "result": {
-        "type": "json"
-    }
-};
-e.addPath(jsonPath, (req, res) => {
-    if (domain.removeSource(req.query.url)){
-        sync.clearIntervalForSource(req.query.url);
-        res.send("Removed");
-    } else
-        res.send("Problem removing source");
-});
-
-jsonPath = {
     "path": "/api/getData",
     "description": "Obtain all running data",
     "method": "GET",
@@ -493,25 +396,6 @@ e.addPath(jsonPath, (req, res) => {
     domain.setBackup(backup);
     sync.launchSync();
     res.send("Backup restored");
-});
-
-jsonPath = {
-    "path": "/original.html",
-    "description": "Return the first list source web page replacing acestream links with vlc:// links",
-    "method": "GET",
-    "params": [{
-        name: "list",
-        type: "string",
-        maxLength: 30,
-        placeholder: "List name (empty is default list)"
-    }],
-    "result": {
-        "type": "json"
-    }
-};
-e.addPath(jsonPath, (req, res) => {
-    res.setHeader('Content-type', "text/html");
-    res.send(domain.getOriginal(getListNameFromParam(req.query.list)));
 });
 
 jsonPath = {
