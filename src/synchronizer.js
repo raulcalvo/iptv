@@ -2,6 +2,8 @@
 const fs = require("fs");
 const parser = require("./acestream-url-parser.js");
 
+
+
 module.exports = class synchronizer {
     async updateChannels(listName, url, sync) {
         console.log("Updating channels from list " + listName + " and source " + url + ")");
@@ -23,15 +25,11 @@ module.exports = class synchronizer {
             var date = new Date();
             source["lastUpdate"] = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
             source["lastUpdateEpoch"] = Math.floor(date.getTime() / 1000);
-            channels.unshift({
-                "name": "Update: " +  new Date().toLocaleString() + " Channels: " + channels.length,
-                "url": "acestream://",
-                "logo" : ""
-            });
         if (channels.length > 1){
                 channels.forEach( channel => {
                     sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
                 });
+                sync._domain.removeDuplicateChannels(listName);
             }
         }
         sync._domain.writeToDisk(listName);

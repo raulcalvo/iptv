@@ -7,6 +7,25 @@ function isEmptyObject(obj) {
     return !Object.keys(obj).length;
 }
 
+function uniqArray(a) {
+    var seen = {};
+    var out = [];
+    var len = a.length;
+    var j = 0;
+    for(var i = 0; i < len; i++) {
+         var item = a[i].url;
+         if(!seen.hasOwnProperty(item)) {
+               seen[item] = j;
+               out[j++] = a[i];
+         } else {
+             var outLogo = out[seen[item]].logo;
+             if ( !outLogo || outLogo == "" )
+                out[seen[item]].logo = a[i].logo;
+         }
+    }
+    return out;
+}
+
 module.exports = class domain {
     emptyList(setup) {
         return {
@@ -250,6 +269,10 @@ module.exports = class domain {
         }
     }
 
+    removeDuplicateChannels(list){
+        this._d.lists[list].channels = uniqArray(this._d.lists[list].channels)
+    }
+
     addChannel(list,name,url, source, logo){
         if (this.listExists(list)){
             if (!this._d.lists[list].hasOwnProperty("channels"))
@@ -353,16 +376,14 @@ module.exports = class domain {
         output += "        <ul class=\"w3-ul w3-card-4 w3-hoverable\">";
         
         this.getChannels(listName).forEach( channel =>{
-            if (!channel.name.startsWith("Update:")){
-                var logo = channel.logo ? channel.logo : defaultLogo;
-                var url = "vlc://" + this.getChannelLink(listName, channel.url);
-                output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
-                output += "    <img src=\"" + logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
-                output += "    <div class=\"w3-bar-item\">";
-                output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
-                output += "    </div>";
-                output += "</li>";
-            }
+            var logo = channel.logo ? channel.logo : defaultLogo;
+            var url = "vlc://" + this.getChannelLink(listName, channel.url);
+            output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
+            output += "    <img src=\"" + logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
+            output += "    <div class=\"w3-bar-item\">";
+            output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
+            output += "    </div>";
+            output += "</li>";
         });        
         
         output += "</ul>";

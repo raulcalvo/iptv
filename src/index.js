@@ -92,10 +92,10 @@ jsonPath = {
         maxLength: 30,
         placeholder: "List name (empty is default list)"
     }, {
-        name: "url",
+        name: "url_or_json",
         type: "string",
-        maxLength: 300,
-        placeholder: "url to parse"
+        maxLength: 2048,
+        placeholder: "url to parse or json with url and position_channel_name attributes"
     }, {
         name: "interval",
         type: "string",
@@ -112,18 +112,39 @@ jsonPath = {
     }
 };
 
+function isJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
 e.addPath(jsonPath, async (req, res) => {
     const listName = getListNameFromParam(req.query.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
-    if (!domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName)){
-        domain.removeSource(listName, req.query.url);
-        domain.addSourceUrl(listName, req.query.url, req.query.interval, req.query.positionChannelName);
+
+    var url = req.query.url_or_json;
+    var positionChannelName = req.query.positionChannelName;
+
+    try {
+        var json = JSON.parse(req.query.url_or_json);
+        url = json.url;
+        positionChannelName = json.position_channel_name;
+    } catch (e){
+        
     }
-    await sync.updateChannels(listName, req.query.url, sync);
-    sync.launchSourceSync(listName, req.query.url);
+    
+    if (!domain.addSourceUrl(listName, url, req.query.interval, positionChannelName)){
+        domain.removeSource(listName, url);
+        domain.addSourceUrl(listName, url, req.query.interval, positionChannelName);
+    }
+    await sync.updateChannels(listName, url, sync);
+    sync.launchSourceSync(listName, url);
     res.setHeader('Content-type', "application/json");
     res.send(JSON.stringify(domain.getChannels(listName)));
 

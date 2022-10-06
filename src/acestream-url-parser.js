@@ -14,21 +14,6 @@ function queryAncestor(node, elementType, maxDepth){
     return valid ? node : queryAncestor(node.parentNode, elementType, maxDepth - 1);
 }
 
-function uniqArray(a) {
-    var seen = {};
-    var out = [];
-    var len = a.length;
-    var j = 0;
-    for(var i = 0; i < len; i++) {
-         var item = a[i].url;
-         if(seen[item] !== 1) {
-               seen[item] = 1;
-               out[j++] = a[i];
-         }
-    }
-    return out;
-}
-
 function parseM3u8(buffer){
     const reader = new M3U8FileParser();
     reader.read(buffer);
@@ -45,7 +30,7 @@ function parseM3u8(buffer){
             });
         }
     });
-  return output;
+    return output;
 }
 
 function getAcestreamLinkInAttributes(node){
@@ -54,7 +39,7 @@ function getAcestreamLinkInAttributes(node){
     for(let attrib of node.attributes){
         var m = attrib.value.match(aceUriRegex);
         if (m){
-            return m[0];
+            return m[0].substring(12);
         }
     }
     if (node.innerHTML && node.innerHTML.indexOf("<") == -1){
@@ -217,7 +202,7 @@ async function parseHtml(buffer, source){
         console.error('ERROR:');
         console.error(error);
     }
-    return uniqArray(output);
+    return output;
 }
 
 async function asyncDownload(url){
