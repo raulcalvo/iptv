@@ -355,7 +355,6 @@ module.exports = class domain {
         this.getChannels(listName).forEach( channel =>{
             if (!channel.name.startsWith("Update:")){
                 var logo = channel.logo ? channel.logo : defaultLogo;
-                if (channel.logo)
                 var url = "vlc://" + this.getChannelLink(listName, channel.url);
                 output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
                 output += "    <img src=\"" + logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
