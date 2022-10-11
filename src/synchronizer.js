@@ -3,37 +3,34 @@ const fs = require("fs");
 const parser = require("./acestream-url-parser.js");
 
 
-
 module.exports = class synchronizer {
-    async updateChannels(listName, url, sync) {
+    updateChannels(listName, url, sync) {
         console.log("Updating channels from list " + listName + " and source " + url + ")");
         if (typeof listName === 'undefined') {
             console.log("UNDEFINED PARAM!!!");
-            return;
+            return Reject(false);
         }
         sync._domain.clearChannels(listName, url);
         var source = sync._domain.getSource(listName,url);
 
         if (!source.hasOwnProperty("isSingleChannel"))
-            return;
+            return Reject(false);
 
-        if (source.isSingleChannel){
-            sync._domain.addChannel(listName, source.name, source.url );
-        } else {
-            var channels = await parser(source);
+        return parser(source).then( channels => {
             source["numChannels"] = channels.length;
             var date = new Date();
             source["lastUpdate"] = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
             source["lastUpdateEpoch"] = Math.floor(date.getTime() / 1000);
-        if (channels.length > 1){
-                channels.forEach( channel => {
-                    sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
-                });
-                sync._domain.removeDuplicateChannels(listName);
-            }
-        }
-        sync._domain.writeToDisk(listName);
-        return true;
+            channels.forEach( channel => {
+                sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
+            });
+            sync._domain.removeDuplicateChannels(listName);
+            sync._domain.writeToDisk(listName);
+            return true;
+        }).catch(error => {
+            sync._domain.writeToDisk(listName);
+            return error;
+        })
     }
 
     launchSourceSync(list, url){
@@ -48,9 +45,12 @@ module.exports = class synchronizer {
 
     launchListSync(listName){
         this.clearIntervals(listName);
-        Object.keys(this._domain.getSources(listName)).forEach( async url =>{
-            await this.updateChannels(listName, url, this);
-            this.launchSourceSync(listName, url);
+        Object.keys(this._domain.getSources(listName)).forEach( url =>{
+            this.updateChannels(listName, url, this).then( sychronized =>{
+                this.launchSourceSync(listName, url);
+            }).catch(error => {
+                return "Error synchronizing channels from list" + listName + " and source " + url;
+            });
         } );
     }    
 

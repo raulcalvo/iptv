@@ -1,5 +1,3 @@
-
-
 'use strict';
 global.__basedir = __dirname;
 
@@ -11,6 +9,7 @@ const express = require("express");
 const logger = require("logger-to-memory");
 const api = require("express-simple-api");
 const fs = require('fs');
+const parser = require("./acestream-url-parser.js");
 
 var acestreamHost = typeof process.env.ACESTREAMHOST === "undefined" ? "127.0.0.1" : process.env.ACESTREAMHOST;
 var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : process.env.ACESTREAMPORT;
@@ -121,7 +120,7 @@ function isJsonString(str) {
     return true;
 }
 
-e.addPath(jsonPath, async (req, res) => {
+e.addPath(jsonPath, (req, res) => {
     const listName = getListNameFromParam(req.query.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
@@ -143,11 +142,13 @@ e.addPath(jsonPath, async (req, res) => {
         domain.removeSource(listName, url);
         domain.addSourceUrl(listName, url, req.query.interval, positionChannelName);
     }
-    await sync.updateChannels(listName, url, sync);
-    sync.launchSourceSync(listName, url);
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(domain.getChannels(listName)));
-
+    sync.updateChannels(listName, url, sync).then( synchronized => {
+        sync.launchSourceSync(listName, url);
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(domain.getChannels(listName)));
+    }).catch(error => {
+        res.send("ERROR: " + error);
+    });
 });
 
 
@@ -444,12 +445,15 @@ jsonPath = {
     }
 };
 
-e.addPath(jsonPath, async (req, res) => {
+e.addPath(jsonPath, (req, res) => {
     var source = domain.newSourceUrl(req.query.url, 30, req.query.positionChannelName);
-    const parser = require("./acestream-url-parser.js");
-    var channels = await parser(source);
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(channels));
+    
+    parser(source).then(channels => {
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(channels));
+    }).catch(error=>{
+        res.send("ERROR: " + error);
+    });
 });
 
 jsonPath = {
@@ -468,12 +472,18 @@ jsonPath = {
 };
 
 e.addPath(jsonPath, async (req, res) => {
-    var json = JSON.parse(req.query.json);
-    var source = domain.newSourceUrl(json.url, 30, json.position_channel_name);
-    const parser = require("./acestream-url-parser.js");
-    var channels = await parser(source);
-    res.setHeader('Content-type', "application/json");
-    res.send(JSON.stringify(channels));
+    try{
+        var json = JSON.parse(req.query.json);
+        var source = domain.newSourceUrl(json.url, 30, json.position_channel_name);
+        parser(source).then( channels => {
+            res.setHeader('Content-type', "application/json");
+            res.send(JSON.stringify(channels));
+        }).catch( error => {
+            res.send("ERROR: " - error)
+        });
+    } catch (error){
+        res.send("ERROR: " + error);
+    }
 });
 
 

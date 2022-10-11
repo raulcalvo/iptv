@@ -1,9 +1,10 @@
 'use strict';
-var request = require('sync-request');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const M3U8FileParser = require('m3u8-file-parser');
-const { chromium } = require('playwright');
+
+const Downloader = require("./downloader.js");
+var downloader = new Downloader();
 
 //const fs = require("fs");
 
@@ -12,25 +13,6 @@ function queryAncestor(node, elementType, maxDepth){
         return null;
     var valid = node.outerHTML.startsWith("<"+elementType);
     return valid ? node : queryAncestor(node.parentNode, elementType, maxDepth - 1);
-}
-
-function parseM3u8(buffer){
-    const reader = new M3U8FileParser();
-    reader.read(buffer);
-    var output = new Array();
-    var result = reader.getResult();
-    var aceRegex = /[0-9a-z]{40}/;
-    result.segments.forEach(function(segment) {
-        var m = segment.url.match(aceRegex);
-        if (m){
-            output.push({
-                "name": segment.inf.title,
-                "url": "acestream://" + m[0],
-                "logo": segment.inf.tvgLogo
-            });
-        }
-    });
-    return output;
 }
 
 function getAcestreamLinkInAttributes(node){
@@ -117,14 +99,12 @@ function isChannelName(input){
     return false;
 }
 
-
-
 function getAcestreamLinkName(preOrderArray, nodeIndex, positionChannelName){
     // obtain name
     try{
         return preOrderArray[nodeIndex].querySelector("img").alt;
     } catch (e){
-        console.log("Cannot find channel name in alt of image");
+        // Cannot find channel name in alt of image
     }
 
     var inc = positionChannelName == "after" ? 1 : -1;
@@ -161,12 +141,12 @@ function getAcestreamLinkLogo(node, preOrder, nodeIndex){
     try{
         return preOrderArray[nodeIndex].querySelector("img").src;
     } catch (e){
-        console.log("Cannot find channel logo");
+        // Cannot find channel logo
     }
     return "";
 }
 
-async function parseHtml(buffer, source){
+function parseHtml(buffer, source){
     source.positionChannelName = "before";
     var output = new Array();
     var aceRegex = /[0-9a-z]{40}/
@@ -205,31 +185,33 @@ async function parseHtml(buffer, source){
     return output;
 }
 
-async function asyncDownload(url){
-    var result = "";
-    const browser = await chromium.launch({ headless: true});
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'networkidle' });
-    var content = await page.content();
-    await browser.close();
-    return content;
+function parseM3u8(buffer){
+    const reader = new M3U8FileParser();
+    reader.read(buffer);
+    var output = new Array();
+    var result = reader.getResult();
+    var aceRegex = /[0-9a-z]{40}/;
+    result.segments.forEach(function(segment) {
+        var m = segment.url.match(aceRegex);
+        if (m){
+            output.push({
+                "name": segment.inf.title,
+                "url": "acestream://" + m[0],
+                "logo": segment.inf.tvgLogo
+            });
+        }
+    });
+    return output;
 }
 
-module.exports = async function parse(source) {
-    var output = new Array();
-    try {
-        var buffer = await asyncDownload(source.url);
-        //fs.writeFileSync("donwloaded.html", buffer);
+
+module.exports = function parse(source) {
+    return downloader.download(source.url).then( buffer => {
         if (buffer.indexOf("#EXTM3U")==0)
             return parseM3u8(buffer);
-        else{
-            
+        else
             return parseHtml(buffer, source);
-        }
-    } catch (error) {
-        console.error('ERROR:');
-        console.error(error);
-    }
-    return output;
+    }).catch( error => {
+        return error;
+    });
 }
