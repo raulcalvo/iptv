@@ -128,8 +128,7 @@ function isJsonString(str) {
 function addSourceToList(json){
     const listName = getListNameFromParam(json.list);
     if (!domain.listExists(listName)){
-        res.send("Error: list " + listName + " doesn't exist.");
-        return;
+        return "List " + listName + " doesn't exist.";
     }
 
     domain.removeSourceFromList(listName, json.url);
