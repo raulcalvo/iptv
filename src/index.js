@@ -45,7 +45,7 @@ domain.readFromDisk();
 
 var sync = new Synchronizer(domain);
 
-sync.launchSync();
+sync.updateAndLaunchSync();
 
 
 function getListNameFromParam(listName) {
@@ -91,7 +91,7 @@ jsonPath = {
         maxLength: 30,
         placeholder: "List name (empty is default list)"
     }, {
-        name: "url_or_json",
+        name: "url",
         type: "string",
         maxLength: 2048,
         placeholder: "url to parse or json with url and position_channel_name attributes"
@@ -105,6 +105,11 @@ jsonPath = {
         type: "string",
         maxLength: 10,
         placeholder: "how to begin searching for channel title when parsing (after|before)"
+    }, {
+        name: "eoi_url",
+        type: "string",
+        maxLength: 10,
+        placeholder: "Url to site with information about events"
     }],
     "result": {
         "type": "json"
@@ -120,33 +125,30 @@ function isJsonString(str) {
     return true;
 }
 
-e.addPath(jsonPath, (req, res) => {
-    const listName = getListNameFromParam(req.query.list);
+function addSourceToList(json){
+    const listName = getListNameFromParam(json.list);
     if (!domain.listExists(listName)){
         res.send("Error: list " + listName + " doesn't exist.");
         return;
     }
 
-    var url = req.query.url_or_json;
-    var positionChannelName = req.query.positionChannelName;
+    domain.removeSourceFromList(listName, json.url);
+    domain.addSourceUrl(listName, json.url, json.interval, json.positionChannelName, json.eoi_url);
 
-    try {
-        var json = JSON.parse(req.query.url_or_json);
-        url = json.url;
-        positionChannelName = json.position_channel_name;
-    } catch (e){
-        
-    }
-    
-    if (!domain.addSourceUrl(listName, url, req.query.interval, positionChannelName)){
-        domain.removeSource(listName, url);
-        domain.addSourceUrl(listName, url, req.query.interval, positionChannelName);
-    }
-    sync.updateChannels(listName, url, sync).then( synchronized => {
-        sync.launchSourceSync(listName, url);
-        res.setHeader('Content-type', "application/json");
-        res.send(JSON.stringify(domain.getChannels(listName)));
+    var source = domain.getSource(listName, json.url);
+    return sync.updateChannels(source, sync).then( synchronized => {
+        sync.launchSourceSync(source);
+        return domain.getChannels(listName);
     }).catch(error => {
+        return error;
+    });
+}
+
+e.addPath(jsonPath, (req, res) => {
+    addSourceToList(req.query).then( channels => {
+        res.setHeader('Content-type', "application/json");
+        res.send(JSON.stringify(channels));
+    }).catch(error =>{
         res.send("ERROR: " + error);
     });
 });
@@ -416,44 +418,8 @@ e.addPath(jsonPath, (req, res) => {
 
     sync.clearIntervals();
     domain.setBackup(backup);
-    sync.launchSync();
+    sync.updateAndLaunchSync();
     res.send("Backup restored");
-});
-
-jsonPath = {
-    "path": "/api/testParseUrl",
-    "description": "Parse webside and output channels",
-    "method": "GET",
-    "params": [{
-        name: "Source Name",
-        type: "string",
-        maxLength: 30,
-        placeholder: "Source name"
-    }, {
-        name: "url",
-        type: "string",
-        maxLength: 300,
-        placeholder: "url to parse"
-    }, {
-        name: "positionChannelName",
-        type: "string",
-        maxLength: 10,
-        placeholder: "how to begin searching for channel title when parsing (after|before)"
-    }],
-    "result": {
-        "type": "json"
-    }
-};
-
-e.addPath(jsonPath, (req, res) => {
-    var source = domain.newSourceUrl(req.query.url, 30, req.query.positionChannelName);
-    
-    parser(source).then(channels => {
-        res.setHeader('Content-type', "application/json");
-        res.send(JSON.stringify(channels));
-    }).catch(error=>{
-        res.send("ERROR: " + error);
-    });
 });
 
 jsonPath = {
@@ -474,7 +440,7 @@ jsonPath = {
 e.addPath(jsonPath, async (req, res) => {
     try{
         var json = JSON.parse(req.query.json);
-        var source = domain.newSourceUrl(json.url, 30, json.position_channel_name);
+        var source = domain.newSourceUrl("fakeListName", json.url, 30, json.position_channel_name, json.eoi_url);
         parser(source).then( channels => {
             res.setHeader('Content-type', "application/json");
             res.send(JSON.stringify(channels));

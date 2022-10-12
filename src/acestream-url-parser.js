@@ -6,6 +6,10 @@ const M3U8FileParser = require('m3u8-file-parser');
 const Downloader = require("./downloader.js");
 var downloader = new Downloader();
 
+const eventsParser = require("./EventsParser.js");
+const levenshtein = require('fast-levenshtein');
+// var stringSimilarity = require("string-similarity");
+
 //const fs = require("fs");
 
 function queryAncestor(node, elementType, maxDepth){
@@ -204,8 +208,7 @@ function parseM3u8(buffer){
     return output;
 }
 
-
-module.exports = function parse(source) {
+function parseChannels(source){
     return downloader.download(source.url).then( buffer => {
         if (buffer.indexOf("#EXTM3U")==0)
             return parseM3u8(buffer);
@@ -214,4 +217,56 @@ module.exports = function parse(source) {
     }).catch( error => {
         return error;
     });
+}
+
+module.exports = function parse(source) {
+    try{
+        var result = {
+            "minDistance":1000,
+            // "minDistance":0.0,
+            "name": "",
+            "url": "",
+            "logo": ""
+        };
+        return parseChannels(source).then( channels => {
+            if (source.eoi_url){
+                return eventsParser(source.eoi_url).then( eventChannels =>{
+                    eventChannels.forEach( eventChannel => {
+                        channels.forEach( channel => {
+                            if (channel.name.indexOf("ESP")!=-1){
+                                var channelName = channel.name.replace(/ *\[[^\]]*]/, '').trim();
+                                channelName = channelName.substr(0,channelName.indexOf(" - "));
+                                var distance = levenshtein.get(channelName, eventChannel);
+                                //var distance = stringSimilarity.compareTwoStrings(channel.name, eventChannel);
+                                if ( distance < result.minDistance ){
+                                //if ( distance > result.minDistance ){
+                                    result.minDistance = distance;
+                                    result.name = eventChannel + " | " + channel.name,
+                                    result.url = channel.url;
+                                    result.logo = channel.logo;
+                                }
+                            }
+                        })
+                    })
+                    if (eventChannels.length > 0){
+                        var res = new Array();
+                        res.push({
+                            "name": result.name,
+                            "url": result.url,
+                            "logo": result.logo
+                        });
+                        return res;
+                    }
+                    else
+                        return channels;
+                });
+            } else {
+                return channels;
+            }
+        }).catch( error => {
+            return error;
+        });
+    } catch (error){
+        return error;
+    }
 }

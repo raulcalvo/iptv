@@ -4,17 +4,13 @@ const parser = require("./acestream-url-parser.js");
 
 
 module.exports = class synchronizer {
-    updateChannels(listName, url, sync) {
-        console.log("Updating channels from list " + listName + " and source " + url + ")");
-        if (typeof listName === 'undefined') {
+    updateChannels(source, sync) {
+        console.log("Updating channels from list " + source.list + " and source " + source.url + ")");
+        if (typeof source.list === 'undefined') {
             console.log("UNDEFINED PARAM!!!");
-            return Reject(false);
+            return false;
         }
-        sync._domain.clearChannels(listName, url);
-        var source = sync._domain.getSource(listName,url);
-
-        if (!source.hasOwnProperty("isSingleChannel"))
-            return Reject(false);
+        sync._domain.clearChannels(source.list, source.url);
 
         return parser(source).then( channels => {
             source["numChannels"] = channels.length;
@@ -22,39 +18,39 @@ module.exports = class synchronizer {
             source["lastUpdate"] = date.toISOString().replace(/T/, ' ').replace(/\..+/, '');
             source["lastUpdateEpoch"] = Math.floor(date.getTime() / 1000);
             channels.forEach( channel => {
-                sync._domain.addChannel(listName, channel.name, channel.url, source.url, channel.logo);
+                sync._domain.addChannel(source.list, channel.name, channel.url, source.url, channel.logo);
             });
-            sync._domain.removeDuplicateChannels(listName);
-            sync._domain.writeToDisk(listName);
+            sync._domain.removeDuplicateChannels(source.list);
+            sync._domain.writeToDisk(source.list);
             return true;
         }).catch(error => {
-            sync._domain.writeToDisk(listName);
+            sync._domain.writeToDisk(source.list);
             return error;
         })
     }
 
-    launchSourceSync(list, url){
-        if (!this._intervals.hasOwnProperty(list)){
-            this._intervals[list] = {};
+    launchSourceSync(source){
+        if (!this._intervals.hasOwnProperty(source.list)){
+            this._intervals[source.list] = {};
         }
-        var source = this._domain.getSource(list, url);
         if (source.hasOwnProperty("updateTime")){
-            this._intervals[list][url] = setInterval( this.updateChannels, this._domain.getSource(list, url).updateTime * 60 * 1000, list, url, this);
+            this._intervals[source.list][source.url] = setInterval( this.updateChannels, source.updateTime * 60 * 1000, source, this);
         }
     }
 
     launchListSync(listName){
         this.clearIntervals(listName);
-        Object.keys(this._domain.getSources(listName)).forEach( url =>{
-            this.updateChannels(listName, url, this).then( sychronized =>{
-                this.launchSourceSync(listName, url);
+        Object.keys(this._domain.getSources(listName)).forEach( sourceUrl =>{
+            var source = this._domain.getList(listName).sources[sourceUrl];
+            this.updateChannels(source, this).then( sychronized =>{
+                this.launchSourceSync(source);
             }).catch(error => {
-                return "Error synchronizing channels from list" + listName + " and source " + url;
+                return "Error synchronizing channels from list" + listName + " and source " + source.url;
             });
         } );
     }    
 
-    launchSync(){
+    updateAndLaunchSync(){
         this.clearIntervals();
         Object.keys(this._domain.getLists()).forEach( list => {
             this.launchListSync(list);

@@ -93,12 +93,14 @@ module.exports = class domain {
         }
     }
         
-    newSourceUrl(url, updateTime, positionChannelName) {
+    newSourceUrl(list, url, updateTime, positionChannelName, eoi_url) {
         return {
+            "list": list,
             "url": url,
             "isSingleChannel" : false,
             "updateTime" : updateTime,
-            "positionChannelName" : positionChannelName
+            "positionChannelName" : positionChannelName,
+            "eoi_url" : eoi_url
         };
     }
     
@@ -118,9 +120,9 @@ module.exports = class domain {
         return false;
     }
 
-    addSourceUrl(list, url, updateTime, positionChannelName){
+    addSourceUrl(list, url, updateTime, positionChannelName, eoi_url){
         if (this.listExists(list) && !this.sourceExists(list, url)){
-            this._d.lists[list].sources[url] = this.newSourceUrl(url, updateTime, positionChannelName);
+            this._d.lists[list].sources[url] = this.newSourceUrl(list, url, updateTime, positionChannelName, eoi_url);
             return true;
         }
         return false;
