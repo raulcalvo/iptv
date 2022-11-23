@@ -1,53 +1,34 @@
 'use strict';
-const { chromium } = require('playwright');
+const request = require("https");
 
 module.exports = class Downloader {
-    download(url){
-        return chromium.launch({ headless: true}).then( browser => {
-            return browser.newContext().then( context => {
-                return context.newPage().then( page => {
-                    return page.goto(url, { waitUntil: 'networkidle'}).then( () => {
-                        return page.content().then( content => {
-                            browser.close();
-                            return content;
-                        }).catch(error => {
-                            return error;
-                        });
-                    }).catch(error => {
-                        return error;
-                    });;
-                }).catch(error => {
-                    return error;
-                });
-            }).catch(error => {
-                return error;
-            });;
-        }).catch(error => {
-            return error;
-        });
-    };
-
-    validStreamUrl(url){
-        return chromium.launch({ headless: true}).then( browser => {
-            return browser.newContext().then( context => {
-                return context.newPage().then( page => {
-                    return page.goto(url, { waitUntil: 'networkidle', timeout: 1000 }).then( () => {
-                        browser.close();
-                        return false;
-                    }).catch(error => {
-                        browser.close();
-                        return true;
-                    });;
-                }).catch(error => {
-                    browser.close();
-                    return false;
-                });
-            }).catch(error => {
-                browser.close();
-                return false;
+    download(url) {
+        return new Promise((resolve, reject) => {
+          const http = require('http'),
+            https = require('https');
+      
+          let client = http;
+      
+          if (url.toString().indexOf("https") === 0) {
+            client = https;
+          }
+      
+          client.get(url, (resp) => {
+            let chunks = [];
+      
+            // A chunk of data has been recieved.
+            resp.on('data', (chunk) => {
+              chunks.push(chunk);
             });
-        }).catch(error => {
-            return false;
+      
+            // The whole response has been received. Print out the result.
+            resp.on('end', () => {
+              resolve(Buffer.concat(chunks).toString('utf-8'));
+            });
+      
+          }).on("error", (err) => {
+            reject(err);
+          });
         });
-    };
+      }
 };
