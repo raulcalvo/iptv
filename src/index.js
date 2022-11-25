@@ -17,6 +17,9 @@ var acestreamPort = typeof process.env.ACESTREAMPORT === "undefined" ? "6878" : 
 var Domain = require("./domain.js");
 var Synchronizer = require("./synchronizer.js");
 
+const Downloader = require("./downloader.js");
+var downloader = new Downloader();
+
 var loggerConfig = {
     "logger-to-memory": {
         "logsEnabled": true,
@@ -110,6 +113,11 @@ jsonPath = {
         type: "string",
         maxLength: 10,
         placeholder: "Url to site with information about events"
+    }, {
+        name: "proxy",
+        type: "string",
+        maxLength: 255,
+        placeholder: "Url of proxy"
     }],
     "result": {
         "type": "json"
@@ -132,7 +140,7 @@ function addSourceToList(json){
     }
 
     domain.removeSourceFromList(listName, json.url);
-    domain.addSourceUrl(listName, json.url, json.interval, json.positionChannelName, json.eoi_url);
+    domain.addSourceUrl(listName, json.url, json.interval, json.positionChannelName, json.eoi_url, json.proxy);
 
     var source = domain.getSource(listName, json.url);
     return sync.updateChannels(source, sync).then( synchronized => {
@@ -451,6 +459,28 @@ e.addPath(jsonPath, async (req, res) => {
     }
 });
 
+jsonPath = {
+    "path": "/api/scrap",
+    "description": "Scrap url and download the html file",
+    "method": "GET",
+    "params": [{
+        name: "url",
+        type: "string",
+        maxLength: 4096,
+        placeholder: "url"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, async (req, res) => {
+    downloader.download(req.query.url).then( buffer => {
+        res.send(buffer);
+    }).catch( error => {
+        res.send("ERROR: " - error);
+    });
+});
 
 e._express.use(express.static(path.join(__dirname, 'favicon')));
 

@@ -25,6 +25,7 @@ function formatDate(date,separator) {
 }
 
 module.exports = function parseEvents(eoi_url) {
+    console.log("Parsing events-url: " + eoi_url);
     return downloader.download(eoi_url).then( buffer => {
         var out = new Array();
         const dom = new JSDOM(buffer);
@@ -33,17 +34,22 @@ module.exports = function parseEvents(eoi_url) {
 
         var currentDate = formatDate(currentDateTime, "/");
         var cabeceraTablaNodes = Array.from(dom.window.document.body.getElementsByClassName('cabeceraTabla'));
+        console.log("Found " + cabeceraTablaNodes.length + "cabeceratablanodes");
         cabeceraTablaNodes.forEach((cabeceraTabla) => {
-            // if (cabeceraTabla.offsetParent !== null){   // if element visible
+                console.log("Current data: " + currentDate);
                 if (cabeceraTabla.textContent.indexOf(currentDate) != -1){    // today's table
                     var tbody = queryAncestor(cabeceraTabla, "tbody", 2);
                     if (tbody){
+                        console.log("Found tbody");
                         var listaCanales = Array.from(tbody.getElementsByClassName("listaCanales"));
+                        console.log("Found " + listaCanales.length + " canales in listaCanales");
                         if (listaCanales.length > 0){
                             var canales = Array.from(listaCanales[0].getElementsByTagName("li"));
+                            console.log("Found " + canales.length + " li nodes");
                             canales.forEach((liNode) => {
                                 if (Array.from(liNode.getElementsByTagName("a")).length == 0){
                                     var text = liNode.title.replace(/ *\([^)]*\) */g, "");
+                                    console.log("Found channel with name: " + text);
                                     out.push(text);
                                 }
                             });
@@ -52,6 +58,7 @@ module.exports = function parseEvents(eoi_url) {
                 }
             // }
         });
+        console.log("TOTAL EVENT CHANNELS FOUND: " + out.length);
         return out;
     }).catch( error => {
         return error;
