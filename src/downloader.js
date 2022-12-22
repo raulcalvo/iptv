@@ -1,6 +1,4 @@
 'use strict';
-const request = require("https");
-
 module.exports = class Downloader {
   download(url, proxy = "") {
     return new Promise((resolve, reject) => {

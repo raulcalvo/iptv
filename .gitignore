@@ -43,6 +43,9 @@ src/node_modules/
 jspm_packages/
 src/jspm_packages/
 
+#package-lock.json
+package-lock.json
+
 # TypeScript v1 declaration files
 typings/
 
