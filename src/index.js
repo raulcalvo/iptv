@@ -477,6 +477,53 @@ e.addPath(jsonPath, async (req, res) => {
     });
 });
 
+
+jsonPath = {
+    "path": "/set",
+    "description": "Set single channel",
+    "method": "GET",
+    "params": [{
+        name: "name",
+        type: "string",
+        maxLength: 32,
+        placeholder: "Channel name"
+    },
+    {
+        name: "channel",
+        type: "string",
+        maxLength: 1024,
+        placeholder: "Channel id"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, async (req, res) => {
+    domain.setSingleChannel(req.query.name, req.query.channel);
+    res.send("DONE");
+});
+
+jsonPath = {
+    "path": "/get",
+    "description": "Get single channel",
+    "method": "GET",
+    "params": [{
+        name: "name",
+        type: "string",
+        maxLength: 32,
+        placeholder: "Channel name"
+    }],
+    "result": {
+        "type": "json"
+    }
+};
+
+e.addPath(jsonPath, async (req, res) => {
+    res.send(domain.getSingleChannel(req.query.name));
+});
+
+
 e._express.use(express.static(path.join(__dirname, 'favicon')));
 
 e.startListening();

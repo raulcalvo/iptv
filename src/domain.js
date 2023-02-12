@@ -409,4 +409,17 @@ module.exports = class domain {
         return output;
     }
 
+    setSingleChannel(name, link){
+        if (!this._d.hasOwnProperty("single_channels"))
+            this._d["single_channels"] = {};
+        this._d["single_channels"][name] = link;
+    }
+
+    getSingleChannel(name){
+        if (!this._d.hasOwnProperty("single_channels"))
+            return "";
+        if (!this._d["single_channels"].hasOwnProperty(name))
+            return "";
+        return this._d["single_channels"][name];
+    }
 }
