@@ -209,7 +209,7 @@ function parseM3u8(buffer){
 }
 
 function parseChannels(source){
-    return downloader.download(source.url, source.proxy).then( buffer => {
+    return downloader.download(source.url).then( buffer => {
         if (buffer.indexOf("#EXTM3U")==0)
             return parseM3u8(buffer);
         else

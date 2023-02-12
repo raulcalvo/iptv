@@ -113,11 +113,6 @@ jsonPath = {
         type: "string",
         maxLength: 10,
         placeholder: "Url to site with information about events"
-    }, {
-        name: "proxy",
-        type: "string",
-        maxLength: 255,
-        placeholder: "Url of proxy"
     }],
     "result": {
         "type": "json"
@@ -140,7 +135,7 @@ function addSourceToList(json){
     }
 
     domain.removeSourceFromList(listName, json.url);
-    domain.addSourceUrl(listName, json.url, json.interval, json.positionChannelName, json.eoi_url, json.proxy);
+    domain.addSourceUrl(listName, json.url, json.interval, json.positionChannelName, json.eoi_url);
 
     var source = domain.getSource(listName, json.url);
     return sync.updateChannels(source, sync).then( synchronized => {

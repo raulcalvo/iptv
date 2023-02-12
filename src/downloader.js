@@ -1,24 +1,12 @@
 'use strict';
+const fetch = require('node-fetch');
+
 module.exports = class Downloader {
-  download(url, proxy = "") {
-    return new Promise((resolve, reject) => {
-
-      var request = require('request');
-
-      var options = proxy != "" ? {
-        url: url,
-        proxy: proxy
-      } : {
-        url: url
-      };
-
-      request(options, function (error, response, body) {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(response.body);
-        }
-      });
-    });
+  download(url) {
+    return fetch(url).then( response => {
+      return response.text();
+    }).catch(error => {
+      return error;}
+    );
   }
 };
