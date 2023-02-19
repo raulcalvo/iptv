@@ -367,6 +367,20 @@ module.exports = class domain {
         output += "<meta name=\"theme-color\" content=\"#ffffff\">";        
         output += "</head>";
         output += "<body>";
+        output +="<script>";
+		output +="function copyToClipboard(link) {";
+		output +="	var tempElement = document.createElement('textarea');";
+		output +="	tempElement.value = link;";
+		output +="	tempElement.setAttribute('readonly', '');";
+		output +="	tempElement.style.position = 'absolute';";
+		output +="	tempElement.style.left = '-9999px';";
+		output +="	document.body.appendChild(tempElement);";
+		output +="	tempElement.select();";
+		output +="	document.execCommand('copy');";
+		output +="	document.body.removeChild(tempElement);";
+		output +="	window.open(link);";
+		output +="}";
+	    output +="</script>";
         output += "    <div class=\"w3-container\">";
         output += "        <h2>" + listName.toUpperCase() + " LIST</h2>";
         output += "        <p>" + this.getChannels(listName).length + " channels</p>";
@@ -378,8 +392,8 @@ module.exports = class domain {
         
         this.getChannels(listName).forEach( channel =>{
             var logo = channel.logo ? channel.logo : defaultLogo;
-            var url = "vlc://" + this.getChannelLink(listName, channel.url);
-            output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
+            // output += "<li class=\"w3-bar\" onclick=\"location.href='"+ url +"';\">";
+            output += "<li class=\"w3-bar\" onclick=\"copyToClipboard('" + channel.url + "')\">";
             output += "    <img src=\"" + logo + "\" class=\"w3-bar-item\" style=\"width:85px\">";
             output += "    <div class=\"w3-bar-item\">";
             output += "    <span class=\"w3-large\">"+ channel.name + "</span><br>";
